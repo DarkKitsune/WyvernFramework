@@ -93,11 +93,31 @@ namespace WyvernFramework
         public Graphics Graphics { get; }
 
         /// <summary>
+        /// Update rate of the app, in updates per second
+        /// </summary>
+        public double UpdateRate;
+
+        /// <summary>
+        /// Current time in seconds
+        /// </summary>
+        public double CurrentTime => DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond;
+
+        /// <summary>
+        /// Last update time
+        /// </summary>
+        private double LastUpdate;
+
+        /// <summary>
+        /// Do we need to update?
+        /// </summary>
+        private bool NeedsUpdate => CurrentTime >= LastUpdate + 1.0 / UpdateRate;
+
+        /// <summary>
         /// Construct a window with a size and title
         /// </summary>
         /// <param name="size"></param>
         /// <param name="title"></param>
-        public WyvernWindow(Vector2 size, string title) : base((int)size.X, (int)size.Y, title)
+        public WyvernWindow(Vector2 size, string title, double updateRate = 60.0) : base((int)size.X, (int)size.Y, title)
         {
             // Argument exceptions
             if (size.X <= 0f || size.Y <= 0f)
@@ -110,6 +130,10 @@ namespace WyvernFramework
             // Create Graphics object
             Graphics = new Graphics(this);
             Graphics.PrintDebug();
+            // Set update rate
+            UpdateRate = updateRate;
+            // Set last update so that an update will occur
+            LastUpdate = CurrentTime - 1.0 / UpdateRate;
             // If there is not already a Main window then use this one as the Main window
             if (Main is null)
                 Main = this;
@@ -127,17 +151,16 @@ namespace WyvernFramework
         /// </summary>
         public void Start()
         {
-#if DEBUG
             // Print debug info
             this.PrintDebug();
-#endif
             // Main loop
             while (!ShouldClose)
             {
                 // Do OS events
                 PollEvents();
                 // Do update
-                Update();
+                while (NeedsUpdate)
+                    Update();
                 // Do draw
                 Draw();
             }
@@ -148,7 +171,10 @@ namespace WyvernFramework
         /// </summary>
         public void Update()
         {
+            // Call update event
             OnUpdate();
+            // Add to LastUpdate
+            LastUpdate += 1.0 / UpdateRate;
         }
 
         /// <summary>
