@@ -9,7 +9,7 @@ using VulkanCore.Khr;
 namespace WyvernFramework
 {
     /// <summary>
-    /// Class providing a vulkan context to do graphics operations with
+    /// Class providing a vulkan context to do graphics commands with
     /// </summary>
     public class Graphics : IDebug
     {
@@ -280,9 +280,9 @@ namespace WyvernFramework
         public SwapchainKhr Swapchain { get; }
 
         /// <summary>
-        /// The swapchain image count
+        /// The swapchain images
         /// </summary>
-        public int SwapchainImageCount { get; }
+        public Image[] SwapchainImages { get; }
 
         /// <summary>
         /// The swapchain's image format
@@ -342,7 +342,7 @@ namespace WyvernFramework
         /// <summary>
         /// The description of the object
         /// </summary>
-        public string Description => "Provides a vulkan context to do graphics operations with";
+        public string Description => "Provides a vulkan context to do graphics commands with";
 
         /// <summary>
         /// Semaphore for when the next swapchain image is available
@@ -511,7 +511,7 @@ namespace WyvernFramework
                     imageSharingMode: SharingMode.Exclusive,
                     imageColorSpace: SwapchainColorSpace
                 ));
-                SwapchainImageCount = Swapchain.GetImages().Length;
+                SwapchainImages = Swapchain.GetImages();
                 Swapchain.PrintDebug();
             }
             // Create semaphores & fences
@@ -519,7 +519,7 @@ namespace WyvernFramework
                 // Image available semaphore
                 ImageAvailableSemaphore = Device.CreateSemaphore();
                 // Swapchain image rendering fences
-                RenderToImageFences = new Fence[SwapchainImageCount];
+                RenderToImageFences = new Fence[SwapchainImages.Length];
                 for (var i = 0; i < RenderToImageFences.Length; i++)
                     RenderToImageFences[i] = Device.CreateFence(new FenceCreateInfo(flags: FenceCreateFlags.Signaled));
             }

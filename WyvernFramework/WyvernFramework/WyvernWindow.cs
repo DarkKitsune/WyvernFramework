@@ -136,9 +136,26 @@ namespace WyvernFramework
             {
                 // Do OS events
                 PollEvents();
+                // Do update
+                Update();
                 // Do draw
                 Draw();
             }
+        }
+
+        /// <summary>
+        /// Execute the update event
+        /// </summary>
+        public void Update()
+        {
+            OnUpdate();
+        }
+
+        /// <summary>
+        /// The update event; update app logic
+        /// </summary>
+        public virtual void OnUpdate()
+        {
         }
 
         /// <summary>
@@ -158,9 +175,9 @@ namespace WyvernFramework
         }
 
         /// <summary>
-        /// The draw event
+        /// The draw event; called when drawing to a swapchain image
         /// </summary>
-        protected virtual void OnDraw(Semaphore start, int imageIndex, out Semaphore end)
+        protected virtual void OnDraw(Semaphore start, int imageIndex, out Semaphore finished)
         {
             throw new InvalidOperationException("Don't call the base OnDraw method");
         }
