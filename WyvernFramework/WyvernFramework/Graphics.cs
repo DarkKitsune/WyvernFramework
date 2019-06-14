@@ -5,6 +5,7 @@ using System.Reflection;
 using VulkanCore;
 using VulkanCore.Ext;
 using VulkanCore.Khr;
+using System.Numerics;
 
 namespace WyvernFramework
 {
@@ -280,6 +281,11 @@ namespace WyvernFramework
         public SwapchainKhr Swapchain { get; }
 
         /// <summary>
+        /// The swapchain dimensions
+        /// </summary>
+        public Extent2D SwapchainExtent { get; }
+
+        /// <summary>
         /// The swapchain images
         /// </summary>
         public Image[] SwapchainImages { get; }
@@ -500,10 +506,11 @@ namespace WyvernFramework
                     SwapchainPresentMode = presentMode;
                 }
                 // Create the swapchain
+                SwapchainExtent = surfaceCapabilities.CurrentExtent;
                 Swapchain = Device.CreateSwapchainKhr(new SwapchainCreateInfoKhr(
                     surface: Surface,
                     imageFormat: SwapchainImageFormat,
-                    imageExtent: surfaceCapabilities.CurrentExtent,
+                    imageExtent: SwapchainExtent,
                     preTransform: surfaceCapabilities.CurrentTransform,
                     presentMode: SwapchainPresentMode,
                     minImageCount: SurfaceCapabilities.MinImageCount,
