@@ -145,11 +145,11 @@ namespace WyvernFramework
             // Exit if already disposed
             if (Disposed)
                 return;
-            // Flag that we're disposed
-            Disposed = true;
             // End the scene if active
             if (Active)
                 End();
+            // Flag that we're disposed
+            Disposed = true;
         }
     }
 }

@@ -288,7 +288,7 @@ namespace WyvernFramework
         /// <summary>
         /// The swapchain images
         /// </summary>
-        public Image[] SwapchainImages { get; }
+        public AttachmentImage[] SwapchainAttachmentImages { get; }
 
         /// <summary>
         /// The swapchain's image format
@@ -518,7 +518,13 @@ namespace WyvernFramework
                     imageSharingMode: SharingMode.Exclusive,
                     imageColorSpace: SwapchainColorSpace
                 ));
-                SwapchainImages = Swapchain.GetImages();
+                SwapchainAttachmentImages = Swapchain.GetImages().Select(
+                        e => new AttachmentImage(
+                                e, SwapchainImageFormat,
+                                SwapchainExtent,
+                                new ImageSubresourceRange(ImageAspects.Color, 0, 1, 0, 1)
+                            )
+                    ).ToArray();
                 Swapchain.PrintDebug();
             }
             // Create semaphores & fences
@@ -526,7 +532,7 @@ namespace WyvernFramework
                 // Image available semaphore
                 ImageAvailableSemaphore = Device.CreateSemaphore();
                 // Swapchain image rendering fences
-                RenderToImageFences = new Fence[SwapchainImages.Length];
+                RenderToImageFences = new Fence[SwapchainAttachmentImages.Length];
                 for (var i = 0; i < RenderToImageFences.Length; i++)
                     RenderToImageFences[i] = Device.CreateFence(new FenceCreateInfo(flags: FenceCreateFlags.Signaled));
             }
