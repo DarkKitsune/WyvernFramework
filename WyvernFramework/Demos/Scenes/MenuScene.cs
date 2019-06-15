@@ -1,9 +1,8 @@
 ﻿using System;
 using WyvernFramework;
-using WyvernFramework.Commands;
 using VulkanCore;
 using Spectrum;
-using Demos.Effects;
+using Demos.GraphicalEffects;
 using Demos.RenderPasses;
 
 namespace Demos.Scenes
@@ -16,19 +15,14 @@ namespace Demos.Scenes
         public override string Description => "The demo menu scene";
 
         /// <summary>
-        /// Command buffers to clear the swapchain images
-        /// </summary>
-        private CommandBuffer[] ClearCommandBuffers;
-
-        /// <summary>
-        /// Semaphore to be signaled when we're done clearing the image
-        /// </summary>
-        private Semaphore ClearedSemaphore;
-
-        /// <summary>
         /// Triangle render pass
         /// </summary>
         private BasicRenderPass TriangleRenderPass;
+
+        /// <summary>
+        /// Effect for clearing an image
+        /// </summary>
+        private ClearEffect ClearEffect;
 
         /// <summary>
         /// Effect for drawing test triangle
@@ -44,14 +38,20 @@ namespace Demos.Scenes
         /// </summary>
         public override void OnStart()
         {
-            // Create a clear command buffer per swapchain image
-            ClearCommandBuffers = Graphics.GraphicsQueueFamily.CreateCommandBuffers(CommandBufferLevel.Primary, Graphics.SwapchainAttachmentImages.Length);
-            // Create a semaphore for when we're done clearing
-            ClearedSemaphore = Graphics.Device.CreateSemaphore();
             // Create render pass
             TriangleRenderPass = new BasicRenderPass(Graphics);
+            // Create and start a clear effect
+            ClearEffect = new ClearEffect(Graphics, TriangleRenderPass);
+            ClearEffect.Start();
+            ClearEffect.RegisterSwapchain();
             // Create and start triangle effect
-            TriangleEffect = new TriangleTestEffect(Graphics, TriangleRenderPass);
+            TriangleEffect = new TriangleTestEffect(
+                    Graphics,
+                    TriangleRenderPass,
+                    ClearEffect.FinalLayout,
+                    ClearEffect.FinalAccess,
+                    ClearEffect.FinalStage
+                );
             TriangleEffect.Start();
             TriangleEffect.RegisterSwapchain();
         }
@@ -61,13 +61,10 @@ namespace Demos.Scenes
         /// </summary>
         public override void OnEnd()
         {
-            // Dispose of clear buffers
-            foreach (var buffer in ClearCommandBuffers)
-                buffer.Dispose();
-            // Dispose of clear semaphore
-            ClearedSemaphore.Dispose();
             // Dispose of render pass
             TriangleRenderPass.Dispose();
+            // End clear effect
+            ClearEffect.End();
             // End triangle effect
             TriangleEffect.End();
         }
@@ -90,10 +87,10 @@ namespace Demos.Scenes
         /// <param name="finished"></param>
         public override void OnDraw(Semaphore start, int imageIndex, out Semaphore finished)
         {
-            // Clear screen by clearing the swapchain image
-            ClearScreen(start, imageIndex);
+            // Clear screen
+            ClearEffect.Draw(start, Graphics.SwapchainAttachmentImages[imageIndex]);
             // Draw triangle
-            TriangleEffect.Draw(ClearedSemaphore, Graphics.SwapchainAttachmentImages[imageIndex]);
+            TriangleEffect.Draw(ClearEffect.FinishedSemaphore, Graphics.SwapchainAttachmentImages[imageIndex]);
             // We are finished when the triangle is drawn
             finished = TriangleEffect.FinishedSemaphore;
         }
@@ -104,43 +101,10 @@ namespace Demos.Scenes
         /// <param name="imageIndex"></param>
         private void SetClearColor(int imageIndex)
         {
-            // Create the clear command buffer for the image
-            {
-                // Generate clear color based on time
-                var hue = (DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond) * 45.0;
-                var color = new Color.HSV(hue % 360.0, 1.0, 1.0).ToRGB();
-                var clearColor = new ClearColorValue(color.R / 255f, color.G / 255f, color.B / 255f);
-                // Record clear command buffer
-                {
-                    // Acquire image and command buffer
-                    var image = Graphics.SwapchainAttachmentImages[imageIndex];
-                    var buffer = ClearCommandBuffers[imageIndex];
-                    // Specify subresource range we will be working with
-                    var range = new ImageSubresourceRange(ImageAspects.Color, 0, 1, 0, 1);
-                    // Begin recording
-                    buffer.Begin();
-                    // Generate commands
-                    var commands =
-                            new ClearColorCommand(image.Image, range, clearColor)
-                        +   new TransitionImageCommand(image.Image, range, ImageLayout.ColorAttachmentOptimal, Accesses.ColorAttachmentWrite);
-                    commands.RecordTo(buffer);
-                    // Finish recording
-                    buffer.End();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Clear a swapchain image
-        /// </summary>
-        /// <param name="start"></param>
-        /// <param name="imageIndex"></param>
-        private void ClearScreen(Semaphore start, int imageIndex)
-        {
-            // Submit the clear command buffer
-            Graphics.GraphicsQueueFamily.First.Submit(
-                    start, PipelineStages.Transfer, ClearCommandBuffers[imageIndex], ClearedSemaphore
-                );
+            // Generate clear color based on time
+            var hue = (DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond) * 45.0;
+            var color = new Color.HSV(hue % 360.0, 1.0, 1.0).ToRGB();
+            var clearColor = new ClearColorValue(color.R / 255f, color.G / 255f, color.B / 255f);
         }
     }
 }

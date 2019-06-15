@@ -8,7 +8,7 @@ namespace WyvernFramework
     /// <summary>
     /// Class wrapping around a set of Vulkan objects that perform a set of commands
     /// </summary>
-    public class Effect : IDebug, IDisposable
+    public class GraphicalEffect : IDebug, IDisposable
     {
         /// <summary>
         /// The name of the object
@@ -60,13 +60,52 @@ namespace WyvernFramework
         /// </summary>
         public RenderPassObject RenderPass { get; }
 
-        public Effect(
-                string name, Graphics graphics, RenderPassObject renderPass
+        /// <summary>
+        /// The initial image layout
+        /// </summary>
+        protected ImageLayout InitialLayout { get; }
+
+        /// <summary>
+        /// The initial image access type
+        /// </summary>
+        protected Accesses InitialAccess { get; }
+
+        /// <summary>
+        /// The earliest pipeline stage the pipeline is allowed to operate in
+        /// (ideally, the final stage of a previous effect this effect relies on)
+        /// </summary>
+        protected PipelineStages InitialStage { get; }
+
+        /// <summary>
+        /// The layout an image should be in after the effect finishes
+        /// </summary>
+        public ImageLayout FinalLayout { get; }
+
+        /// <summary>
+        /// The access type an image should be in after the effect finishes
+        /// </summary>
+        public Accesses FinalAccess { get; }
+
+        /// <summary>
+        /// The latest pipeline stage the effect takes place in
+        /// </summary>
+        public PipelineStages FinalStage { get; }
+
+        public GraphicalEffect(
+                string name, Graphics graphics, RenderPassObject renderPass,
+                ImageLayout finalLayout, Accesses finalAccess, PipelineStages finalStage, ImageLayout initialLayout = ImageLayout.Undefined,
+                Accesses initialAccess = Accesses.None, PipelineStages initialStage = PipelineStages.TopOfPipe
             )
         {
             Name = name;
             Graphics = graphics;
             RenderPass = renderPass;
+            InitialLayout = initialLayout;
+            InitialAccess = initialAccess;
+            InitialStage = initialStage;
+            FinalLayout = finalLayout;
+            FinalAccess = finalAccess;
+            FinalStage = finalStage;
         }
 
         /// <summary>
@@ -161,7 +200,7 @@ namespace WyvernFramework
         /// Register an image for rendering to
         /// </summary>
         /// <param name="image"></param>
-        public void RegisterImage(AttachmentImage image)
+        public CommandBuffer RegisterImage(AttachmentImage image)
         {
             // Check arguments
             if (image is null)
@@ -174,6 +213,7 @@ namespace WyvernFramework
             if (cmd is null)
                 throw new NullReferenceException("OnRegisterImage override must not return a null command buffer");
             CommandBuffers.Add(image, cmd);
+            return cmd;
         }
 
         /// <summary>
@@ -233,7 +273,7 @@ namespace WyvernFramework
                 throw new ArgumentNullException(nameof(image));
             if (CommandBuffers.TryGetValue(image, out var buffer))
                 return buffer;
-            throw new InvalidOperationException("Image is not registered");
+            return RegisterImage(image);
         }
 
         /// <summary>

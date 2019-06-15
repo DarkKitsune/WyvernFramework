@@ -1,13 +1,11 @@
 ﻿using VulkanCore;
 using WyvernFramework;
-using WyvernFramework.Commands;
 using System.IO;
-using System.Linq;
 using System.Collections.Generic;
 
-namespace Demos.Effects
+namespace Demos.GraphicalEffects
 {
-    public class TriangleTestEffect : Effect
+    public class TriangleTestEffect : GraphicalEffect
     {
         /// <summary>
         /// The triangle vertex shader
@@ -29,8 +27,12 @@ namespace Demos.Effects
         /// </summary>
         private Dictionary<AttachmentImage, Framebuffer> Framebuffers { get; } = new Dictionary<AttachmentImage, Framebuffer>();
 
-        public TriangleTestEffect(Graphics graphics, RenderPassObject renderPass)
-            : base(nameof(TriangleTestEffect), graphics, renderPass)
+        public TriangleTestEffect(Graphics graphics, RenderPassObject renderPass, ImageLayout initialLayout,
+                Accesses initialAccess, PipelineStages initialStage)
+            : base(
+                    nameof(TriangleTestEffect), graphics, renderPass, ImageLayout.ColorAttachmentOptimal,
+                    Accesses.ColorAttachmentWrite, PipelineStages.ColorAttachmentOutput, initialLayout, initialAccess, initialStage
+                )
         {
         }
 
@@ -95,8 +97,6 @@ namespace Demos.Effects
 
         protected override CommandBuffer OnRegisterImage(AttachmentImage image)
         {
-            // Create ranges
-            var range = new ImageSubresourceRange(ImageAspects.Color, 0, 1, 0, 1);
             // Create image view and framebuffer
             {
                 Framebuffers.Add(image, RenderPass.RenderPass.CreateFramebuffer(new FramebufferCreateInfo(
@@ -112,17 +112,28 @@ namespace Demos.Effects
                 // Begin recording
                 buffer.Begin(new CommandBufferBeginInfo());
                 // Write commands
-                var commands =
-                        new BeginRenderPassCommand(new RenderPassBeginInfo(
-                                Framebuffers[image],
-                                RenderPass.RenderPass,
-                                new Rect2D(0, 0, image.Extent.Width, image.Extent.Height)
-                            ))
-                    +   new BindPipelineCommand(PipelineBindPoint.Graphics, Pipeline)
-                    +   new DrawCommand(3)
-                    +   new EndRenderPassCommand();
-                // Record commands to buffer
-                commands.RecordTo(buffer);
+                buffer.CmdPipelineBarrier(
+                        srcStageMask: InitialStage,
+                        dstStageMask: PipelineStages.ColorAttachmentOutput,
+                        imageMemoryBarriers: new ImageMemoryBarrier[]
+                        {
+                            new ImageMemoryBarrier(
+                                    image: image.Image,
+                                    subresourceRange: image.SubresourceRange,
+                                    srcAccessMask: InitialAccess,
+                                    dstAccessMask: Accesses.ColorAttachmentWrite,
+                                    oldLayout: InitialLayout,
+                                    newLayout: ImageLayout.ColorAttachmentOptimal
+                                )
+                        }
+                    );
+                buffer.CmdBeginRenderPass(new RenderPassBeginInfo(
+                        Framebuffers[image],
+                        RenderPass.RenderPass,
+                        new Rect2D(0, 0, image.Extent.Width, image.Extent.Height)
+                    ));
+                buffer.CmdBindPipeline(PipelineBindPoint.Graphics, Pipeline);
+                buffer.CmdDraw(3);
                 // Finish recording
                 buffer.End();
                 // Return buffer
