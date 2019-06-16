@@ -114,7 +114,7 @@ namespace Demos.GraphicalEffects
                             rasterizationState: new PipelineRasterizationStateCreateInfo(
                                     polygonMode: PolygonMode.Fill,
                                     cullMode: CullModes.Back,
-                                    frontFace: FrontFace.CounterClockwise,
+                                    frontFace: FrontFace.Clockwise,
                                     lineWidth: 1f
                                 ),
                             viewportState: new PipelineViewportStateCreateInfo(
