@@ -46,6 +46,11 @@ namespace WyvernFramework
             RenderPass = Graphics.Device.CreateRenderPass(createInfo);
         }
 
+        ~RenderPassObject()
+        {
+            Dispose();
+        }
+
         /// <summary>
         /// Get the attachment description of the given attachment
         /// </summary>

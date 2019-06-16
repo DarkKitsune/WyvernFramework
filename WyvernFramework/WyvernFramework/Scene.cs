@@ -48,6 +48,11 @@ namespace WyvernFramework
             Window = window;
         }
 
+        ~Scene()
+        {
+            Dispose();
+        }
+
         /// <summary>
         /// Start the scene
         /// </summary>

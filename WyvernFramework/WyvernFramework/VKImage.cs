@@ -73,6 +73,11 @@ namespace WyvernFramework
             SubresourceRange = subresourceRange;
         }
 
+        ~VKImage()
+        {
+            Dispose();
+        }
+
         /// <summary>
         /// Dispose the object
         /// </summary>
@@ -81,6 +86,7 @@ namespace WyvernFramework
             if (Disposed)
                 return;
             Disposed = true;
+            _imageView?.Dispose();
             Image.Dispose();
         }
     }

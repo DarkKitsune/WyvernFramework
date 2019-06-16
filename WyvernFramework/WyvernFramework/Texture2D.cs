@@ -144,6 +144,11 @@ namespace WyvernFramework
             staging.Dispose();
         }
 
+        ~Texture2D()
+        {
+            Dispose();
+        }
+
         /// <summary>
         /// Dispose the object
         /// </summary>

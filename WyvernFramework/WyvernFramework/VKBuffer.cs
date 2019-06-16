@@ -86,6 +86,11 @@ namespace WyvernFramework
             Buffer.BindMemory(DeviceMemory);
         }
 
+        ~VKBuffer()
+        {
+            Dispose();
+        }
+
         /// <summary>
         /// Create a buffer for staging
         /// </summary>
