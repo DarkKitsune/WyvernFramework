@@ -280,7 +280,7 @@ namespace WyvernFramework
         }
 
         /// <summary>
-        /// Re-register images (results in re-recording command buffers and such)
+        /// Re-record command buffers
         /// </summary>
         public void Refresh()
         {
