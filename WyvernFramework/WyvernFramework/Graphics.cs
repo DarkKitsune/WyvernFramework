@@ -135,7 +135,14 @@ namespace WyvernFramework
                 // Set the enabled layers
                 var availableLayers = Instance.EnumerateLayerProperties();
                 createInfo.EnabledLayerNames = EnabledDebugLayers
-                    .Where(availableLayers.Contains)
+                    .Where(e => {
+                        if (availableLayers.Contains(e))
+                        {
+                            Debug.Info($"Enabled layer {e}", "Graphics");
+                            return true;
+                        }
+                        return false;
+                    })
                     .Distinct()
                     .ToArray();
                 // Create instance
@@ -143,11 +150,9 @@ namespace WyvernFramework
             }
             // Create the debug callback
             {
-                DebugCallback = Instance.CreateDebugReportCallbackExt(
-                new DebugReportCallbackCreateInfoExt()
-                {
-                    Callback = OnDebugReport
-                });
+                DebugCallback = Instance.CreateDebugReportCallbackExt(new DebugReportCallbackCreateInfoExt(
+                        DebugReportFlagsExt.All, OnDebugReport
+                    ));
             }
             // Flag that we are now initialized
             InitializedStatic = true;
@@ -251,6 +256,11 @@ namespace WyvernFramework
         public PhysicalDevice PhysicalDevice { get; }
 
         /// <summary>
+        /// The physical device's memory properties
+        /// </summary>
+        public PhysicalDeviceMemoryProperties MemoryProperties { get; }
+
+        /// <summary>
         /// The logical device the window uses
         /// </summary>
         public Device Device { get; }
@@ -288,7 +298,7 @@ namespace WyvernFramework
         /// <summary>
         /// The swapchain images
         /// </summary>
-        public AttachmentImage[] SwapchainAttachmentImages { get; }
+        public VKImage[] SwapchainAttachmentImages { get; }
 
         /// <summary>
         /// The swapchain's image format
@@ -356,6 +366,11 @@ namespace WyvernFramework
         public Semaphore ImageAvailableSemaphore { get; }
 
         /// <summary>
+        /// Semaphore for when we're reading to present
+        /// </summary>
+        public Semaphore ReadyToPresentSemaphore { get; }
+
+        /// <summary>
         /// Fences for when rendering to each swapchain image is complete
         /// </summary>
         public Fence[] RenderToImageFences { get; }
@@ -391,6 +406,7 @@ namespace WyvernFramework
                     .FirstOrDefault();
                 if (PhysicalDevice is null)
                     throw new InvalidOperationException("No physical device found that meets the requirements for the application");
+                MemoryProperties = PhysicalDevice.GetMemoryProperties();
             }
             // Create default queue families
             {
@@ -519,7 +535,7 @@ namespace WyvernFramework
                     imageColorSpace: SwapchainColorSpace
                 ));
                 SwapchainAttachmentImages = Swapchain.GetImages().Select(
-                        e => new AttachmentImage(
+                        e => new VKImage(
                                 e, SwapchainImageFormat,
                                 SwapchainExtent,
                                 new ImageSubresourceRange(ImageAspects.Color, 0, 1, 0, 1)
@@ -531,6 +547,7 @@ namespace WyvernFramework
             {
                 // Image available semaphore
                 ImageAvailableSemaphore = Device.CreateSemaphore();
+                ReadyToPresentSemaphore = Device.CreateSemaphore();
                 // Swapchain image rendering fences
                 RenderToImageFences = new Fence[SwapchainAttachmentImages.Length];
                 for (var i = 0; i < RenderToImageFences.Length; i++)
@@ -565,9 +582,20 @@ namespace WyvernFramework
                     waitSemaphore: waitSemaphore,
                     waitDstStageMask: PipelineStages.BottomOfPipe,
                     commandBuffer: null,
-                    signalSemaphore: null,
+                    signalSemaphore: ReadyToPresentSemaphore,
                     fence: RenderToImageFences[imageIndex]
                 );
+        }
+
+        /// <summary>
+        /// Get the memory type index for the required memory type
+        /// </summary>
+        /// <param name="memoryTypeBits"></param>
+        /// <param name="properties"></param>
+        /// <returns></returns>
+        public int GetMemoryTypeIndex(int memoryTypeBits, MemoryProperties properties)
+        {
+            return MemoryProperties.MemoryTypes.IndexOf(memoryTypeBits, properties);
         }
     }
 }

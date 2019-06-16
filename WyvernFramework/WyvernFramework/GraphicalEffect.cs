@@ -38,27 +38,22 @@ namespace WyvernFramework
         /// <summary>
         /// The command buffer registry
         /// </summary>
-        protected Dictionary<AttachmentImage, CommandBuffer> CommandBuffers { get; } = new Dictionary<AttachmentImage, CommandBuffer>();
+        protected Dictionary<VKImage, CommandBuffer> CommandBuffers { get; } = new Dictionary<VKImage, CommandBuffer>();
 
         /// <summary>
         /// Get all registered images
         /// </summary>
-        public IEnumerable<AttachmentImage> RegisteredImages => CommandBuffers.Keys;
+        public IEnumerable<VKImage> RegisteredImages => CommandBuffers.Keys;
 
         /// <summary>
         /// Get all registered images and their command buffers
         /// </summary>
-        public IEnumerable<KeyValuePair<AttachmentImage, CommandBuffer>> RegisteredPairs => CommandBuffers;
+        public IEnumerable<KeyValuePair<VKImage, CommandBuffer>> RegisteredPairs => CommandBuffers;
 
         /// <summary>
         /// The semaphore that should be signaled when the effect finishes its tasks
         /// </summary>
         public Semaphore FinishedSemaphore { get; private set; }
-
-        /// <summary>
-        /// Render pass to use
-        /// </summary>
-        public RenderPassObject RenderPass { get; }
 
         /// <summary>
         /// The initial image layout
@@ -92,14 +87,13 @@ namespace WyvernFramework
         public PipelineStages FinalStage { get; }
 
         public GraphicalEffect(
-                string name, Graphics graphics, RenderPassObject renderPass,
+                string name, Graphics graphics,
                 ImageLayout finalLayout, Accesses finalAccess, PipelineStages finalStage, ImageLayout initialLayout = ImageLayout.Undefined,
                 Accesses initialAccess = Accesses.None, PipelineStages initialStage = PipelineStages.TopOfPipe
             )
         {
             Name = name;
             Graphics = graphics;
-            RenderPass = renderPass;
             InitialLayout = initialLayout;
             InitialAccess = initialAccess;
             InitialStage = initialStage;
@@ -164,7 +158,7 @@ namespace WyvernFramework
         /// <summary>
         /// Draw the effect
         /// </summary>
-        public void Draw(Semaphore start, AttachmentImage image)
+        public void Draw(Semaphore start, VKImage image)
         {
             // Check if disposed
             if (Disposed)
@@ -179,7 +173,7 @@ namespace WyvernFramework
         /// <summary>
         /// Called when drawing the effect
         /// </summary>
-        public virtual void OnDraw(Semaphore start, AttachmentImage image = null)
+        public virtual void OnDraw(Semaphore start, VKImage image = null)
         {
         }
 
@@ -200,7 +194,7 @@ namespace WyvernFramework
         /// Register an image for rendering to
         /// </summary>
         /// <param name="image"></param>
-        public CommandBuffer RegisterImage(AttachmentImage image)
+        public CommandBuffer RegisterImage(VKImage image)
         {
             // Check arguments
             if (image is null)
@@ -230,7 +224,7 @@ namespace WyvernFramework
         /// </summary>
         /// <param name="image"></param>
         /// <returns>New command buffer for the image, or null</returns>
-        protected virtual CommandBuffer OnRegisterImage(AttachmentImage image)
+        protected virtual CommandBuffer OnRegisterImage(VKImage image)
         {
             return null;
         }
@@ -239,7 +233,7 @@ namespace WyvernFramework
         /// Unregister an image from the effect
         /// </summary>
         /// <param name="image"></param>
-        public void UnregisterImage(AttachmentImage image)
+        public void UnregisterImage(VKImage image)
         {
             // Check arguments
             if (image is null)
@@ -257,7 +251,7 @@ namespace WyvernFramework
         /// Called when registering an image
         /// </summary>
         /// <param name="image"></param>
-        protected virtual void OnUnregisterImage(AttachmentImage image)
+        protected virtual void OnUnregisterImage(VKImage image)
         {
         }
 
@@ -266,7 +260,7 @@ namespace WyvernFramework
         /// </summary>
         /// <param name="image"></param>
         /// <returns></returns>
-        public CommandBuffer GetCommandBuffer(AttachmentImage image)
+        public CommandBuffer GetCommandBuffer(VKImage image)
         {
             // Check arguments
             if (image is null)

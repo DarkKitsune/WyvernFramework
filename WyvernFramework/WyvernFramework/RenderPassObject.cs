@@ -77,7 +77,7 @@ namespace WyvernFramework
         /// </summary>
         /// <param name="image"></param>
         /// <returns></returns>
-        public Framebuffer CreateFramebuffer(AttachmentImage image)
+        public Framebuffer CreateFramebuffer(VKImage image)
         {
             // Check arguments
             if (image is null)

@@ -1,14 +1,30 @@
 ﻿using VulkanCore;
+using System;
 
 namespace WyvernFramework
 {
     /// <summary>
-    /// Represents part of an image that can be used for attachments
+    /// Represents a color image
     /// </summary>
-    public class AttachmentImage
+    public class VKImage : IDebug, IDisposable
     {
         private ImageView _imageView;
 
+        /// <summary>
+        /// The name of the object
+        /// </summary>
+        public string Name { get; }
+
+        /// <summary>
+        /// A description of the object
+        /// </summary>
+        public string Description => "A Vulkan image";
+
+        /// <summary>
+        /// Whether the object has been disposed
+        /// </summary>
+        public bool Disposed { get; private set; }
+        
         /// <summary>
         /// The image
         /// </summary>
@@ -36,6 +52,8 @@ namespace WyvernFramework
         {
             get
             {
+                if (Disposed)
+                    throw new ObjectDisposedException(Name);
                 if (_imageView is null)
                 {
                     _imageView = Image.CreateView(new ImageViewCreateInfo(
@@ -47,12 +65,23 @@ namespace WyvernFramework
             }
         }
 
-        public AttachmentImage(Image image, Format format, Extent2D extent, ImageSubresourceRange subresourceRange)
+        public VKImage(Image image, Format format, Extent2D extent, ImageSubresourceRange subresourceRange)
         {
             Image = image;
             Format = format;
             Extent = extent;
             SubresourceRange = subresourceRange;
+        }
+
+        /// <summary>
+        /// Dispose the object
+        /// </summary>
+        public void Dispose()
+        {
+            if (Disposed)
+                return;
+            Disposed = true;
+            Image.Dispose();
         }
     }
 }

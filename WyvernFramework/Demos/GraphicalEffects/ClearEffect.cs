@@ -9,7 +9,7 @@ namespace Demos.GraphicalEffects
     {
         public ClearEffect(Graphics graphics, RenderPassObject renderPass)
             : base(
-                    nameof(TriangleTestEffect), graphics, renderPass,
+                    nameof(TriangleTestEffect), graphics,
                     ImageLayout.TransferDstOptimal, Accesses.TransferWrite, PipelineStages.Transfer
                 )
         {
@@ -19,7 +19,7 @@ namespace Demos.GraphicalEffects
         {
         }
 
-        protected override CommandBuffer OnRegisterImage(AttachmentImage image)
+        protected override CommandBuffer OnRegisterImage(VKImage image)
         {
             // Create and record command buffer
             {
@@ -56,7 +56,7 @@ namespace Demos.GraphicalEffects
             }
         }
 
-        public override void OnDraw(Semaphore start, AttachmentImage image)
+        public override void OnDraw(Semaphore start, VKImage image)
         {
             // Submit the command buffer
             Graphics.GraphicsQueueFamily.First.Submit(

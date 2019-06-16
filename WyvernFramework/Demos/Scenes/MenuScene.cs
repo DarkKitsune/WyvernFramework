@@ -29,6 +29,8 @@ namespace Demos.Scenes
         /// </summary>
         private TriangleTestEffect TriangleEffect;
 
+        private Texture2D TriangleTexture;
+
         public MenuScene(WyvernWindow window) : base("Menu", window)
         {
         }
@@ -45,9 +47,11 @@ namespace Demos.Scenes
             ClearEffect.Start();
             ClearEffect.RegisterSwapchain();
             // Create and start triangle effect
+            TriangleTexture = Texture2D.FromFile("TriangleTexture", Graphics, System.IO.Path.Combine("..", "..", "..", "Content", "test.png"));
             TriangleEffect = new TriangleTestEffect(
                     Graphics,
                     TriangleRenderPass,
+                    TriangleTexture,
                     ClearEffect.FinalLayout,
                     ClearEffect.FinalAccess,
                     ClearEffect.FinalStage

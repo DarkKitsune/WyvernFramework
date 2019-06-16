@@ -7,33 +7,27 @@ namespace Demos.GraphicalEffects
 {
     public class TriangleTestEffect : GraphicalEffect
     {
-        /// <summary>
-        /// The triangle vertex shader
-        /// </summary>
+        private Texture2D Texture;
         private ShaderModule VertexShader;
-
-        /// <summary>
-        /// The triangle fragment shader
-        /// </summary>
         private ShaderModule FragmentShader;
-
-        /// <summary>
-        /// The triangle graphics pipeline
-        /// </summary>
+        private Sampler TextureSampler;
+        private DescriptorPool DescriptorPool;
+        private DescriptorSetLayout DescriptorSetLayout;
+        private DescriptorSet TextureDescriptorSet;
+        private PipelineLayout PipelineLayout;
         private Pipeline Pipeline;
+        private RenderPassObject RenderPass { get; }
+        private Dictionary<VKImage, Framebuffer> Framebuffers { get; } = new Dictionary<VKImage, Framebuffer>();
 
-        /// <summary>
-        /// Framebuffers for registered images
-        /// </summary>
-        private Dictionary<AttachmentImage, Framebuffer> Framebuffers { get; } = new Dictionary<AttachmentImage, Framebuffer>();
-
-        public TriangleTestEffect(Graphics graphics, RenderPassObject renderPass, ImageLayout initialLayout,
+        public TriangleTestEffect(Graphics graphics, RenderPassObject renderPass, Texture2D texture, ImageLayout initialLayout,
                 Accesses initialAccess, PipelineStages initialStage)
             : base(
-                    nameof(TriangleTestEffect), graphics, renderPass, ImageLayout.ColorAttachmentOptimal,
+                    nameof(TriangleTestEffect), graphics, ImageLayout.ColorAttachmentOptimal,
                     Accesses.ColorAttachmentWrite, PipelineStages.ColorAttachmentOutput, initialLayout, initialAccess, initialStage
                 )
         {
+            RenderPass = renderPass;
+            Texture = texture;
         }
 
         public override void OnStart()
@@ -51,10 +45,69 @@ namespace Demos.GraphicalEffects
                             File.ReadAllBytes(fragPath)
                         ));
                 }
+                // Create sampler
+                {
+                    TextureSampler = Graphics.Device.CreateSampler(new SamplerCreateInfo
+                    {
+                        MinFilter = Filter.Linear,
+                        MagFilter = Filter.Linear
+                    });
+                }
+                // Create descriptor set layout
+                {
+                    DescriptorSetLayout = Graphics.Device.CreateDescriptorSetLayout(new DescriptorSetLayoutCreateInfo(
+                            new[]
+                            {
+                                new DescriptorSetLayoutBinding(
+                                        binding: 0,
+                                        descriptorType: DescriptorType.CombinedImageSampler,
+                                        descriptorCount: 1,
+                                        stageFlags: ShaderStages.Fragment
+                                    )
+                            }
+                        ));
+                }
+                // Create descriptor pool
+                {
+                    DescriptorPool = Graphics.Device.CreateDescriptorPool(new DescriptorPoolCreateInfo(
+                            1,
+                            new[]
+                            {
+                                new DescriptorPoolSize(DescriptorType.CombinedImageSampler, 1)
+                            }
+                        ));
+                }
+                // Create descriptor set
+                {
+                    TextureDescriptorSet = DescriptorPool.AllocateSets(new DescriptorSetAllocateInfo(
+                            1, DescriptorSetLayout
+                        ))[0];
+                    var writes = new[]
+                    {
+                        new WriteDescriptorSet(
+                                TextureDescriptorSet, 0, 0, 1, DescriptorType.CombinedImageSampler,
+                                imageInfo: new[]
+                                {
+                                    new DescriptorImageInfo(
+                                            TextureSampler,
+                                            Texture.Image.ImageView,
+                                            ImageLayout.ShaderReadOnlyOptimal
+                                        )
+                                }
+                            )
+                    };
+                    DescriptorPool.UpdateSets(writes);
+                }
+                // Create pipeline layout
+                {
+                    PipelineLayout = Graphics.Device.CreatePipelineLayout(new PipelineLayoutCreateInfo(
+                            setLayouts: new[] { DescriptorSetLayout }
+                        ));
+                }
                 // Create graphics pipeline
                 {
                     Pipeline = Graphics.Device.CreateGraphicsPipeline(new GraphicsPipelineCreateInfo(
-                            layout: Graphics.Device.CreatePipelineLayout(new PipelineLayoutCreateInfo()),
+                            layout: PipelineLayout,
                             renderPass: RenderPass.RenderPass,
                             subpass: 0,
                             stages: new[]
@@ -74,7 +127,10 @@ namespace Demos.GraphicalEffects
                                     new Viewport(0f, 0f, Graphics.Window.Size.X, Graphics.Window.Size.Y),
                                     new Rect2D(0, 0, (int)Graphics.Window.Size.X, (int)Graphics.Window.Size.Y)
                                 ),
-                            multisampleState: new PipelineMultisampleStateCreateInfo(),
+                            multisampleState: new PipelineMultisampleStateCreateInfo(
+                                    rasterizationSamples: SampleCounts.Count1,
+                                    minSampleShading: 1
+                                ),
                             colorBlendState: new PipelineColorBlendStateCreateInfo(
                                     attachments: new[]
                                     {
@@ -95,7 +151,7 @@ namespace Demos.GraphicalEffects
             }
         }
 
-        protected override CommandBuffer OnRegisterImage(AttachmentImage image)
+        protected override CommandBuffer OnRegisterImage(VKImage image)
         {
             // Create image view and framebuffer
             {
@@ -133,7 +189,9 @@ namespace Demos.GraphicalEffects
                         new Rect2D(0, 0, image.Extent.Width, image.Extent.Height)
                     ));
                 buffer.CmdBindPipeline(PipelineBindPoint.Graphics, Pipeline);
+                buffer.CmdBindDescriptorSet(PipelineBindPoint.Graphics, PipelineLayout, TextureDescriptorSet);
                 buffer.CmdDraw(3);
+                buffer.CmdEndRenderPass();
                 // Finish recording
                 buffer.End();
                 // Return buffer
@@ -141,13 +199,13 @@ namespace Demos.GraphicalEffects
             }
         }
 
-        protected override void OnUnregisterImage(AttachmentImage image)
+        protected override void OnUnregisterImage(VKImage image)
         {
             Framebuffers[image].Dispose();
             Framebuffers.Remove(image);
         }
 
-        public override void OnDraw(Semaphore start, AttachmentImage image)
+        public override void OnDraw(Semaphore start, VKImage image)
         {
             // Submit the command buffer
             Graphics.GraphicsQueueFamily.First.Submit(

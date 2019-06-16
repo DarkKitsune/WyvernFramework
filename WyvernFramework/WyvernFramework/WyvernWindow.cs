@@ -197,7 +197,7 @@ namespace WyvernFramework
             // Do draw event
             OnDraw(Graphics.ImageAvailableSemaphore, image, out var onDrawEnd);
             Graphics.SignalRenderToImageFence(onDrawEnd, image);
-            Graphics.PresentQueueFamily.HighestPriority.PresentKhr(onDrawEnd, Graphics.Swapchain, image);
+            Graphics.PresentQueueFamily.HighestPriority.PresentKhr(Graphics.ReadyToPresentSemaphore, Graphics.Swapchain, image);
         }
 
         /// <summary>
