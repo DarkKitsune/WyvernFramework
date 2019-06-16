@@ -376,6 +376,11 @@ namespace WyvernFramework
         public Fence[] RenderToImageFences { get; }
 
         /// <summary>
+        /// A basic content loader
+        /// </summary>
+        public ContentCollection Content { get; }
+
+        /// <summary>
         /// Construct a Graphics object belonging to a window
         /// </summary>
         /// <param name="window"></param>
@@ -552,6 +557,10 @@ namespace WyvernFramework
                 RenderToImageFences = new Fence[SwapchainAttachmentImages.Length];
                 for (var i = 0; i < RenderToImageFences.Length; i++)
                     RenderToImageFences[i] = Device.CreateFence(new FenceCreateInfo(flags: FenceCreateFlags.Signaled));
+            }
+            // Create content collection
+            {
+                Content = new ContentCollection(this);
             }
         }
 

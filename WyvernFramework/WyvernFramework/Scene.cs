@@ -38,6 +38,11 @@ namespace WyvernFramework
         /// </summary>
         public Graphics Graphics => Window.Graphics;
 
+        /// <summary>
+        /// The content required by the scene
+        /// </summary>
+        public ContentCollection Content { get; }
+
         public Scene(string name, WyvernWindow window)
         {
             // Check arguments
@@ -46,6 +51,7 @@ namespace WyvernFramework
             // Set fields
             Name = name;
             Window = window;
+            Content = new ContentCollection(Graphics);
         }
 
         ~Scene()
@@ -64,6 +70,8 @@ namespace WyvernFramework
             // Don't allow starting twice
             if (Active)
                 throw new InvalidOperationException("Scene is already active");
+            // Load content
+            Content.Load();
             // Set to active and run OnStart
             Active = true;
             OnStart();
@@ -87,6 +95,8 @@ namespace WyvernFramework
             // Don't allow ending if not active
             if (Active)
                 throw new InvalidOperationException("Scene is not active");
+            // Unload content
+            Content.Unload();
             // Run OnEnd and set to inactive
             OnEnd();
             Active = false;

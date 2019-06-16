@@ -34,10 +34,9 @@ namespace Demos.Scenes
         /// </summary>
         private TransitionEffect TransitionEffect;
 
-        private Texture2D TriangleTexture;
-
         public MenuScene(WyvernWindow window) : base("Menu", window)
         {
+            Content.Add<Texture2D>("TriangleTexture", "test.png");
         }
 
         /// <summary>
@@ -51,11 +50,10 @@ namespace Demos.Scenes
             ClearEffect = new ClearEffect(Graphics, TriangleRenderPass);
             ClearEffect.Start();
             // Create and start triangle effect
-            TriangleTexture = Texture2D.FromFile("TriangleTexture", Graphics, System.IO.Path.Combine("..", "..", "..", "Content", "test.png"));
             TriangleEffect = new TriangleTestEffect(
                     Graphics,
                     TriangleRenderPass,
-                    TriangleTexture,
+                    Content["TriangleTexture"] as Texture2D,
                     ClearEffect.FinalLayout,
                     ClearEffect.FinalAccess,
                     ClearEffect.FinalStage

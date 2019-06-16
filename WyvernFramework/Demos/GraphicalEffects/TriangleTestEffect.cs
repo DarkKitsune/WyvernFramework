@@ -36,14 +36,8 @@ namespace Demos.GraphicalEffects
             {
                 // Load shaders
                 {
-                    var vertPath = Path.Combine("..", "..", "..", "Content", "Shader.vert.spv");
-                    var fragPath = Path.Combine("..", "..", "..", "Content", "Shader.frag.spv");
-                    VertexShader = Graphics.Device.CreateShaderModule(new ShaderModuleCreateInfo(
-                            File.ReadAllBytes(vertPath)
-                        ));
-                    FragmentShader = Graphics.Device.CreateShaderModule(new ShaderModuleCreateInfo(
-                            File.ReadAllBytes(fragPath)
-                        ));
+                    VertexShader  = Graphics.Content.LoadShaderModule("Shader.vert.spv");
+                    FragmentShader = Graphics.Content.LoadShaderModule("Shader.frag.spv");
                 }
                 // Create sampler
                 {
