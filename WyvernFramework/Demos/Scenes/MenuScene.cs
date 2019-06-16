@@ -29,6 +29,11 @@ namespace Demos.Scenes
         /// </summary>
         private TriangleTestEffect TriangleEffect;
 
+        /// <summary>
+        /// Effect for transitioning an image before presenting
+        /// </summary>
+        private TransitionEffect TransitionEffect;
+
         private Texture2D TriangleTexture;
 
         public MenuScene(WyvernWindow window) : base("Menu", window)
@@ -45,7 +50,6 @@ namespace Demos.Scenes
             // Create and start a clear effect
             ClearEffect = new ClearEffect(Graphics, TriangleRenderPass);
             ClearEffect.Start();
-            ClearEffect.RegisterSwapchain();
             // Create and start triangle effect
             TriangleTexture = Texture2D.FromFile("TriangleTexture", Graphics, System.IO.Path.Combine("..", "..", "..", "Content", "test.png"));
             TriangleEffect = new TriangleTestEffect(
@@ -56,8 +60,16 @@ namespace Demos.Scenes
                     ClearEffect.FinalAccess,
                     ClearEffect.FinalStage
                 );
+            TransitionEffect = new TransitionEffect(
+                    Graphics,
+                    TriangleEffect.FinalLayout,
+                    TriangleEffect.FinalAccess,
+                    TriangleEffect.FinalStage,
+                    ImageLayout.ColorAttachmentOptimal,
+                    Accesses.MemoryRead,
+                    PipelineStages.BottomOfPipe
+                );
             TriangleEffect.Start();
-            TriangleEffect.RegisterSwapchain();
         }
 
         /// <summary>
@@ -108,7 +120,7 @@ namespace Demos.Scenes
             // Generate clear color based on time
             var hue = (DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond) * 45.0;
             var color = new Color.HSV(hue % 360.0, 1.0, 1.0).ToRGB();
-            var clearColor = new ClearColorValue(color.R / 255f, color.G / 255f, color.B / 255f);
+            ClearEffect.ClearColor = new ClearColorValue(color.R / 255f, color.G / 255f, color.B / 255f);
         }
     }
 }

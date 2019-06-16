@@ -151,7 +151,7 @@ namespace Demos.GraphicalEffects
             }
         }
 
-        protected override CommandBuffer OnRegisterImage(VKImage image)
+        protected override void OnRegisterImage(VKImage image)
         {
             // Create image view and framebuffer
             {
@@ -161,42 +161,6 @@ namespace Demos.GraphicalEffects
                         height: image.Extent.Height
                     )));
             }
-            // Create and record command buffer
-            {
-                // Create command buffer
-                var buffer = Graphics.GraphicsQueueFamily.CreateCommandBuffers(CommandBufferLevel.Primary, 1)[0];
-                // Begin recording
-                buffer.Begin(new CommandBufferBeginInfo());
-                // Write commands
-                buffer.CmdPipelineBarrier(
-                        srcStageMask: InitialStage,
-                        dstStageMask: PipelineStages.ColorAttachmentOutput,
-                        imageMemoryBarriers: new ImageMemoryBarrier[]
-                        {
-                            new ImageMemoryBarrier(
-                                    image: image.Image,
-                                    subresourceRange: image.SubresourceRange,
-                                    srcAccessMask: InitialAccess,
-                                    dstAccessMask: Accesses.ColorAttachmentWrite,
-                                    oldLayout: InitialLayout,
-                                    newLayout: ImageLayout.ColorAttachmentOptimal
-                                )
-                        }
-                    );
-                buffer.CmdBeginRenderPass(new RenderPassBeginInfo(
-                        Framebuffers[image],
-                        RenderPass.RenderPass,
-                        new Rect2D(0, 0, image.Extent.Width, image.Extent.Height)
-                    ));
-                buffer.CmdBindPipeline(PipelineBindPoint.Graphics, Pipeline);
-                buffer.CmdBindDescriptorSet(PipelineBindPoint.Graphics, PipelineLayout, TextureDescriptorSet);
-                buffer.CmdDraw(3);
-                buffer.CmdEndRenderPass();
-                // Finish recording
-                buffer.End();
-                // Return buffer
-                return buffer;
-            }
         }
 
         protected override void OnUnregisterImage(VKImage image)
@@ -205,11 +169,44 @@ namespace Demos.GraphicalEffects
             Framebuffers.Remove(image);
         }
 
+        protected override void OnRecordCommandBuffer(VKImage image, CommandBuffer buffer)
+        {
+            // Begin recording
+            buffer.Begin(new CommandBufferBeginInfo());
+            // Write commands
+            buffer.CmdPipelineBarrier(
+                    srcStageMask: InitialStage,
+                    dstStageMask: PipelineStages.ColorAttachmentOutput,
+                    imageMemoryBarriers: new ImageMemoryBarrier[]
+                    {
+                            new ImageMemoryBarrier(
+                                    image: image.Image,
+                                    subresourceRange: image.SubresourceRange,
+                                    srcAccessMask: InitialAccess,
+                                    dstAccessMask: Accesses.ColorAttachmentWrite,
+                                    oldLayout: InitialLayout,
+                                    newLayout: ImageLayout.ColorAttachmentOptimal
+                                )
+                    }
+                );
+            buffer.CmdBeginRenderPass(new RenderPassBeginInfo(
+                    Framebuffers[image],
+                    RenderPass.RenderPass,
+                    new Rect2D(0, 0, image.Extent.Width, image.Extent.Height)
+                ));
+            buffer.CmdBindPipeline(PipelineBindPoint.Graphics, Pipeline);
+            buffer.CmdBindDescriptorSet(PipelineBindPoint.Graphics, PipelineLayout, TextureDescriptorSet);
+            buffer.CmdDraw(3);
+            buffer.CmdEndRenderPass();
+            // Finish recording
+            buffer.End();
+        }
+
         public override void OnDraw(Semaphore start, VKImage image)
         {
             // Submit the command buffer
             Graphics.GraphicsQueueFamily.First.Submit(
-                    start, PipelineStages.ColorAttachmentOutput, CommandBuffers[image], FinishedSemaphore
+                    start, PipelineStages.ColorAttachmentOutput, GetCommandBuffer(image), FinishedSemaphore
                 );
         }
     }

@@ -202,11 +202,11 @@ namespace WyvernFramework
             // Check if active
             if (!Active)
                 throw new InvalidOperationException("Effect is not active");
-            // Create new command buffer and register it
-            var cmd = OnRegisterImage(image);
-            if (cmd is null)
-                throw new NullReferenceException("OnRegisterImage override must not return a null command buffer");
+            // Create new command buffer, register the image, and reord the command buffer
+            var cmd = Graphics.GraphicsQueueFamily.CreateCommandBuffers(CommandBufferLevel.Primary, 1)[0];
             CommandBuffers.Add(image, cmd);
+            OnRegisterImage(image);
+            OnRecordCommandBuffer(image, cmd);
             return cmd;
         }
 
@@ -224,9 +224,17 @@ namespace WyvernFramework
         /// </summary>
         /// <param name="image"></param>
         /// <returns>New command buffer for the image, or null</returns>
-        protected virtual CommandBuffer OnRegisterImage(VKImage image)
+        protected virtual void OnRegisterImage(VKImage image)
         {
-            return null;
+        }
+
+        /// <summary>
+        /// Called to record to a command buffer
+        /// </summary>
+        /// <param name="image"></param>
+        /// <param name="buffer"></param>
+        protected virtual void OnRecordCommandBuffer(VKImage image, CommandBuffer buffer)
+        {
         }
 
         /// <summary>
@@ -242,6 +250,7 @@ namespace WyvernFramework
             if (!Active)
                 throw new InvalidOperationException("Effect is not active");
             // Call OnUnregisterImage and unregister command buffer
+            Graphics.Device.WaitIdle();
             OnUnregisterImage(image);
             CommandBuffers[image].Dispose();
             CommandBuffers.Remove(image);
@@ -275,10 +284,10 @@ namespace WyvernFramework
         /// </summary>
         public void Refresh()
         {
+            Graphics.Device.WaitIdle();
             foreach (var image in RegisteredImages.ToArray())
             {
-                UnregisterImage(image);
-                RegisterImage(image);
+                OnRecordCommandBuffer(image, CommandBuffers[image]);
             }
         }
     }
