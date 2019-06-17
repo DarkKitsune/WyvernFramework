@@ -4,6 +4,7 @@ using VulkanCore;
 using Spectrum;
 using Demos.GraphicalEffects;
 using Demos.RenderPasses;
+using System.Numerics;
 
 namespace Demos.Scenes
 {
@@ -27,7 +28,7 @@ namespace Demos.Scenes
         /// <summary>
         /// Effect for drawing test triangle
         /// </summary>
-        private TriangleTestEffect TriangleEffect;
+        private SpriteEffect SpriteEffect;
 
         /// <summary>
         /// Effect for transitioning an image before presenting
@@ -50,24 +51,26 @@ namespace Demos.Scenes
             ClearEffect = new ClearEffect(Graphics, TriangleRenderPass);
             ClearEffect.Start();
             // Create and start triangle effect
-            TriangleEffect = new TriangleTestEffect(
+            SpriteEffect = new SpriteEffect(
                     Graphics,
                     TriangleRenderPass,
-                    Content["TriangleTexture"] as Texture2D,
                     ClearEffect.FinalLayout,
                     ClearEffect.FinalAccess,
                     ClearEffect.FinalStage
                 );
+            SpriteEffect.Start();
+            new RenderInstances.SpriteInstance(SpriteEffect, Vector3.Zero, new Vector2(150, 150), Content["TriangleTexture"] as Texture2D, default);
+            new RenderInstances.SpriteInstance(SpriteEffect, new Vector3(150, 0, 0), new Vector2(150, 150), Content["TriangleTexture"] as Texture2D, default);
             TransitionEffect = new TransitionEffect(
                     Graphics,
-                    TriangleEffect.FinalLayout,
-                    TriangleEffect.FinalAccess,
-                    TriangleEffect.FinalStage,
+                    SpriteEffect.FinalLayout,
+                    SpriteEffect.FinalAccess,
+                    SpriteEffect.FinalStage,
                     ImageLayout.ColorAttachmentOptimal,
                     Accesses.MemoryRead,
                     PipelineStages.BottomOfPipe
                 );
-            TriangleEffect.Start();
+            TransitionEffect.Start();
         }
 
         /// <summary>
@@ -80,7 +83,7 @@ namespace Demos.Scenes
             // End clear effect
             ClearEffect.End();
             // End triangle effect
-            TriangleEffect.End();
+            SpriteEffect.End();
         }
 
         /// <summary>
@@ -104,9 +107,9 @@ namespace Demos.Scenes
             // Clear screen
             ClearEffect.Draw(start, Graphics.SwapchainAttachmentImages[imageIndex]);
             // Draw triangle
-            TriangleEffect.Draw(ClearEffect.FinishedSemaphore, Graphics.SwapchainAttachmentImages[imageIndex]);
+            SpriteEffect.Draw(ClearEffect.FinishedSemaphore, Graphics.SwapchainAttachmentImages[imageIndex]);
             // We are finished when the triangle is drawn
-            finished = TriangleEffect.FinishedSemaphore;
+            finished = SpriteEffect.FinishedSemaphore;
         }
 
         /// <summary>

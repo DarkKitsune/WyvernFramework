@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using VulkanCore;
 using Spectrum;
+using System;
 
 namespace WyvernFramework
 {
@@ -75,6 +76,20 @@ namespace WyvernFramework
         public static Color.RGB ToSpectrum(this ColorF4 color)
         {
             return new Color.RGB((byte)(color.R * 255), (byte)(color.G * 255), (byte)(color.B * 255));
+        }
+
+        /// <summary>
+        /// Align an offset using std140 alignment rules
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        public static int AlignSTD140<T>(this int offset)
+            where T : struct
+        {
+            var size = Interop.SizeOf<T>();
+            var align = (int)Math.Ceiling((double)size / sizeof(float)) * sizeof(float);
+            return (int)Math.Ceiling((double)offset / align) * align;
         }
     }
 }

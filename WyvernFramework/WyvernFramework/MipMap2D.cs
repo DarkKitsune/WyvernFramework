@@ -33,17 +33,30 @@ namespace WyvernFramework
         /// </summary>
         public int PixelSize => 4;
 
-        public MipMap2D(IntPtr dataPtr, int dataSize, Extent2D extent)
+        public MipMap2D(IntPtr dataPtr, int stride, Extent2D extent, bool flip = true)
         {
             Extent = extent;
-            var destSize = extent.Width * extent.Height * PixelSize;
-            Data = new byte[destSize];
+            var totalBytes = stride * extent.Height;
+            Data = new byte[totalBytes];
             unsafe
             {
                 var src = (byte*)dataPtr;
-                fixed (byte* dest = Data)
+                fixed (byte* destStart = Data)
                 {
-                    System.Buffer.MemoryCopy(src, dest, destSize, dataSize);
+                    if (flip)
+                    {
+                        var dest = destStart + totalBytes - stride;
+                        for (var i = 0; i < extent.Height; i++)
+                        {
+                            System.Buffer.MemoryCopy(src, dest, stride, stride);
+                            dest -= stride;
+                            src += stride;
+                        }
+                    }
+                    else
+                    {
+                        System.Buffer.MemoryCopy(src, destStart, totalBytes, totalBytes);
+                    }
                 }
             }
         }

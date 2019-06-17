@@ -175,7 +175,7 @@ namespace WyvernFramework
                 );
             var mipmap = new MipMap2D(
                     data.Scan0,
-                    data.Stride * data.Height,
+                    data.Stride,
                     new Extent2D(image.Width, image.Height)
                 );
             image.UnlockBits(data);

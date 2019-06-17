@@ -113,7 +113,7 @@ namespace Demos.GraphicalEffects
                             vertexInputState: new PipelineVertexInputStateCreateInfo(),
                             rasterizationState: new PipelineRasterizationStateCreateInfo(
                                     polygonMode: PolygonMode.Fill,
-                                    cullMode: CullModes.Back,
+                                    cullMode: CullModes.Front,
                                     frontFace: FrontFace.Clockwise,
                                     lineWidth: 1f
                                 ),
