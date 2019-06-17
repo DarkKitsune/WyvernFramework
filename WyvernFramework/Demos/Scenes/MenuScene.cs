@@ -1,5 +1,6 @@
 ﻿using System;
 using WyvernFramework;
+using WyvernFramework.Sprites;
 using VulkanCore;
 using Spectrum;
 using Demos.GraphicalEffects;
@@ -59,8 +60,8 @@ namespace Demos.Scenes
                     ClearEffect.FinalStage
                 );
             SpriteEffect.Start();
-            new RenderInstances.SpriteInstance(SpriteEffect, Vector3.Zero, new Vector2(150, 150), Content["TriangleTexture"] as Texture2D, default);
-            new RenderInstances.SpriteInstance(SpriteEffect, new Vector3(150, 0, 0), new Vector2(150, 150), Content["TriangleTexture"] as Texture2D, default);
+            new SpriteInstance(SpriteEffect, Vector3.Zero, new Vector2(150, 150), Content["TriangleTexture"] as Texture2D, default);
+            new SpriteInstance(SpriteEffect, new Vector3(150, 0, 0), new Vector2(150, 150), Content["TriangleTexture"] as Texture2D, default);
             TransitionEffect = new TransitionEffect(
                     Graphics,
                     SpriteEffect.FinalLayout,

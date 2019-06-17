@@ -1,14 +1,12 @@
 ﻿using VulkanCore;
-using WyvernFramework;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
-using Demos.RenderInstances;
 using System.Numerics;
 using System;
 using System.Runtime.InteropServices;
 
-namespace Demos.GraphicalEffects
+namespace WyvernFramework.Sprites
 {
     public class SpriteEffect : InstanceRendererEffect
     {
@@ -40,7 +38,7 @@ namespace Demos.GraphicalEffects
         public SpriteEffect(Graphics graphics, RenderPassObject renderPass, ImageLayout initialLayout,
                 Accesses initialAccess, PipelineStages initialStage)
             : base(
-                    nameof(TriangleTestEffect), graphics, ImageLayout.ColorAttachmentOptimal,
+                    nameof(SpriteEffect), graphics, ImageLayout.ColorAttachmentOptimal,
                     Accesses.ColorAttachmentWrite, PipelineStages.ColorAttachmentOutput, initialLayout, initialAccess, initialStage
                 )
         {

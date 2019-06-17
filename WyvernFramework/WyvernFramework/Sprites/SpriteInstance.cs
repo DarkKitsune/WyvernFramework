@@ -1,9 +1,7 @@
 ﻿using VulkanCore;
-using WyvernFramework;
-using Demos.GraphicalEffects;
 using System.Numerics;
 
-namespace Demos.RenderInstances
+namespace WyvernFramework.Sprites
 {
     public class SpriteInstance : RenderInstance
     {
