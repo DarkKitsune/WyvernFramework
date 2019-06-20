@@ -3,9 +3,9 @@ using WyvernFramework;
 using System.IO;
 using System.Collections.Generic;
 
-namespace Demos.GraphicalEffects
+namespace Demos.GraphicalEffect
 {
-    public class ClearEffect : GraphicalEffect
+    public class ClearEffect : ImageEffect
     {
         private ClearColorValue _clearColor = new ClearColorValue(1f, 1f, 1f, 1f);
 

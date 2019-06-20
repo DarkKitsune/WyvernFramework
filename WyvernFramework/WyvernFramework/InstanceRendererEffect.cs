@@ -4,7 +4,7 @@ using VulkanCore;
 
 namespace WyvernFramework
 {
-    public class InstanceRendererEffect : GraphicalEffect
+    public class InstanceRendererEffect : ImageEffect
     {
         protected Dictionary<object, InstanceList> InstanceLists { get; } = new Dictionary<object, InstanceList>();
 

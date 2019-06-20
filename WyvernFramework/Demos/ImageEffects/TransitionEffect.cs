@@ -3,9 +3,9 @@ using WyvernFramework;
 using System.IO;
 using System.Collections.Generic;
 
-namespace Demos.GraphicalEffects
+namespace Demos.GraphicalEffect
 {
-    public class TransitionEffect : GraphicalEffect
+    public class TransitionEffect : ImageEffect
     {
         public TransitionEffect(
                 Graphics graphics, ImageLayout initialLayout, Accesses initialAccess, PipelineStages initialStage,

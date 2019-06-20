@@ -3,9 +3,9 @@ using WyvernFramework;
 using System.IO;
 using System.Collections.Generic;
 
-namespace Demos.GraphicalEffects
+namespace Demos.GraphicalEffect
 {
-    public class TriangleTestEffect : GraphicalEffect
+    public class TriangleTestEffect : ImageEffect
     {
         private Texture2D Texture;
         private ShaderModule VertexShader;

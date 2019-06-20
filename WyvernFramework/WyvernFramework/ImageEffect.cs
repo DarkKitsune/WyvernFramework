@@ -8,7 +8,7 @@ namespace WyvernFramework
     /// <summary>
     /// Class wrapping around a set of Vulkan objects that perform a set of commands
     /// </summary>
-    public class GraphicalEffect : IDebug, IDisposable
+    public class ImageEffect : IDebug, IDisposable
     {
         /// <summary>
         /// The name of the object
@@ -86,7 +86,7 @@ namespace WyvernFramework
         /// </summary>
         public PipelineStages FinalStage { get; }
 
-        public GraphicalEffect(
+        public ImageEffect(
                 string name, Graphics graphics,
                 ImageLayout finalLayout, Accesses finalAccess, PipelineStages finalStage, ImageLayout initialLayout = ImageLayout.Undefined,
                 Accesses initialAccess = Accesses.None, PipelineStages initialStage = PipelineStages.TopOfPipe

@@ -3,7 +3,7 @@ using WyvernFramework;
 using WyvernFramework.Sprites;
 using VulkanCore;
 using Spectrum;
-using Demos.GraphicalEffects;
+using Demos.GraphicalEffect;
 using Demos.RenderPasses;
 using System.Numerics;
 
