@@ -5,7 +5,7 @@ using System.Reflection;
 using VulkanCore;
 using VulkanCore.Ext;
 using VulkanCore.Khr;
-using System.Numerics;
+using System.Diagnostics;
 
 namespace WyvernFramework
 {
@@ -361,6 +361,16 @@ namespace WyvernFramework
         public string Description => "Provides a vulkan context to do graphics commands with";
 
         /// <summary>
+        /// Stopwatch for timing
+        /// </summary>
+        private Stopwatch Stopwatch { get; }
+
+        /// <summary>
+        /// Current time in seconds
+        /// </summary>
+        public double CurrentTime => Stopwatch.Elapsed.TotalSeconds;
+
+        /// <summary>
         /// Semaphore for when the next swapchain image is available
         /// </summary>
         public Semaphore ImageAvailableSemaphore { get; }
@@ -562,6 +572,8 @@ namespace WyvernFramework
             {
                 Content = new ContentCollection(this);
             }
+            // Misc
+            Stopwatch = Stopwatch.StartNew();
         }
 
         /// <summary>

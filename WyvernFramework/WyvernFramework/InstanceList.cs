@@ -1,10 +1,11 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 
 namespace WyvernFramework
 {
     public class InstanceList
     {
-        public const int MaxInstances = 4000;
+        public const int MaxInstances = 500000;
 
         private List<RenderInstance> Instances { get; } = new List<RenderInstance>();
 
@@ -14,14 +15,30 @@ namespace WyvernFramework
 
         public bool Updated { get; private set; }
 
+        public double LastUpdateTime { get; private set; }
+
+        public InstanceRendererEffect Effect { get; }
+
+        public double TimeSinceLastUpdate => Effect.Graphics.CurrentTime - LastUpdateTime;
+
+        public InstanceList(InstanceRendererEffect effect)
+        {
+            Effect = effect;
+        }
+
         public void FlagUpdate()
         {
             Updated = true;
         }
 
-        public void ClearUpdate()
+        internal void Update()
         {
+            foreach (var inst in AllInstances.ToArray())
+            {
+                inst.StoreValues(0f);
+            }
             Updated = false;
+            LastUpdateTime = Effect.Graphics.CurrentTime;
         }
 
         public void Add(RenderInstance instance)

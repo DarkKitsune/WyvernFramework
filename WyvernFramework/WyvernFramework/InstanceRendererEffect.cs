@@ -26,7 +26,6 @@ namespace WyvernFramework
         {
             var listChoosingInfo = instance.GetListChoosingInformation();
             var list = GetInstanceList(listChoosingInfo);
-            Debug.Info("listChoosingInfo code: " + listChoosingInfo.GetHashCode(), "RegisterInstance");
             list.Add(instance);
             list.FlagUpdate();
             return list;
@@ -36,15 +35,17 @@ namespace WyvernFramework
         {
             if (InstanceLists.TryGetValue(listChoosingInfo, out var list))
                 return list;
-            var newList = new InstanceList();
+            var newList = new InstanceList(this);
             InstanceLists.Add(listChoosingInfo, newList);
             return newList;
         }
 
-        protected void ClearUpdates()
+        protected void UpdateLists()
         {
             foreach (var keyList in UpdatedInstanceLists)
-                keyList.Value.ClearUpdate();
+            {
+                keyList.Value.Update();
+            }
         }
     }
 }

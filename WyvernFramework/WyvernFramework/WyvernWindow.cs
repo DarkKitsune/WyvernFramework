@@ -98,11 +98,6 @@ namespace WyvernFramework
         public double UpdateRate;
 
         /// <summary>
-        /// Current time in seconds
-        /// </summary>
-        public double CurrentTime => DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond;
-
-        /// <summary>
         /// Last update time
         /// </summary>
         private double LastUpdate;
@@ -110,7 +105,7 @@ namespace WyvernFramework
         /// <summary>
         /// Do we need to update?
         /// </summary>
-        private bool NeedsUpdate => CurrentTime >= LastUpdate + 1.0 / UpdateRate;
+        private bool NeedsUpdate => Graphics.CurrentTime >= LastUpdate + 1.0 / UpdateRate;
 
         /// <summary>
         /// Construct a window with a size and title
@@ -133,7 +128,7 @@ namespace WyvernFramework
             // Set update rate
             UpdateRate = updateRate;
             // Set last update so that an update will occur
-            LastUpdate = CurrentTime - 1.0 / UpdateRate;
+            LastUpdate = Graphics.CurrentTime - 1.0 / UpdateRate;
             // If there is not already a Main window then use this one as the Main window
             if (Main is null)
                 Main = this;

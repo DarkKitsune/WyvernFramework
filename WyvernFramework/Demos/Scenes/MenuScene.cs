@@ -60,8 +60,16 @@ namespace Demos.Scenes
                     ClearEffect.FinalStage
                 );
             SpriteEffect.Start();
-            new SpriteInstance(SpriteEffect, Vector3.Zero, new Vector2(150, 150), Content["TriangleTexture"] as Texture2D, default);
-            new SpriteInstance(SpriteEffect, new Vector3(150, 0, 0), new Vector2(150, 150), Content["TriangleTexture"] as Texture2D, default);
+            var rand = new Random();
+            for (var i = 0; i < InstanceList.MaxInstances; i++)
+            {
+                var vel = new Vector3(
+                        -50f + (float)rand.NextDouble() * 100f,
+                        -50f + (float)rand.NextDouble() * 100f,
+                        0f
+                    );
+                new SpriteInstance(SpriteEffect, Vector3.Zero, vel, new Vector2(16, 16), Content["TriangleTexture"] as Texture2D, new Rect2D(0, 0, 16, 16));
+            }
             TransitionEffect = new TransitionEffect(
                     Graphics,
                     SpriteEffect.FinalLayout,
