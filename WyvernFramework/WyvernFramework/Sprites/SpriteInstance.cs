@@ -27,6 +27,8 @@ namespace WyvernFramework.Sprites
 
         public Vector4 Rectangle { get; }
 
+        //public Animation Animation { get; }
+
         public SpriteInstance(SpriteEffect effect, Vector3 position, Vector3 velocity, Vector2 scale, Texture2D texture, Rect2D rectangle) : base(effect)
         {
             StoredPosition = position;

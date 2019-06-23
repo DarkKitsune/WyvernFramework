@@ -64,11 +64,11 @@ namespace Demos.Scenes
             for (var i = 0; i < InstanceList.MaxInstances; i++)
             {
                 var vel = new Vector3(
-                        -30f + (float)rand.NextDouble() * 60f,
-                        -30f + (float)rand.NextDouble() * 60f,
+                        -100f + (float)rand.NextDouble() * 200f,
+                        -100f + (float)rand.NextDouble() * 200f,
                         0f
                     );
-                new SpriteInstance(SpriteEffect, Vector3.Zero, vel, new Vector2(16, 16), Content["TriangleTexture"] as Texture2D, new Rect2D(0, 0, 16, 16));
+                new SpriteInstance(SpriteEffect, Vector3.Zero, vel, new Vector2(32, 32), Content["TriangleTexture"] as Texture2D, new Rect2D(0, 0, 32, 32));
             }
             TransitionEffect = new TransitionEffect(
                     Graphics,

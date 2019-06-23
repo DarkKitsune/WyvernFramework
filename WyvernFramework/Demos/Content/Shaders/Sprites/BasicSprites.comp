@@ -2,16 +2,17 @@
 
 const int MAX_LISTS = 32;
 
-layout (local_size_x = 256) in;
+layout (local_size_x = 1024) in;
 
 struct Instance
 {
-    float Time;
     vec3 Position;
     vec3 Velocity;
+    vec4 Rectangle;
     vec2 Scale;
     int ListIndex;
-    vec4 Rectangle;
+    float Time;
+    int AnimationIndex;
 };
 
 layout (std140, binding = 0) buffer buffer_Instances
@@ -24,14 +25,25 @@ layout (std140, binding = 1) uniform struct_Time
     float listTime[MAX_LISTS];
 } time;
 
+Instance doMovement(Instance instance, float deltaTime)
+{
+    instance.Position += instance.Velocity * deltaTime;
+    return instance;
+}
+
 void main() 
 {
+    // Acquire instance and info
     uint index = gl_GlobalInvocationID.x;
     Instance instance = instances[index];
     float currentTime = time.listTime[instance.ListIndex];
     float previousTime = instance.Time;
-    float timePassed = currentTime - previousTime;
+    float deltaTime = currentTime - previousTime;
+
+    // Do logic
+    instance = doMovement(instance, deltaTime);
+
+    // Update instance time and store it back in the buffer
     instance.Time = currentTime;
-    instance.Position += instance.Velocity * timePassed;
     instances[index] = instance;
 }

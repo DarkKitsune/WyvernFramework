@@ -10,21 +10,32 @@ namespace WyvernFramework.Sprites
 {
     public class SpriteEffect : InstanceRendererEffect
     {
-        [StructLayout(LayoutKind.Explicit, Size = 56)]
+        [StructLayout(LayoutKind.Explicit, Size = 32)]
+        private struct Instruction
+        {
+            [FieldOffset(0)]
+            public Vector4 Argument;
+            [FieldOffset(16)]
+            public int Type;
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 80)]
         private struct SpriteInstanceInfo
         {
             [FieldOffset(0)]
-            public float Time;
-            [FieldOffset(16)]
             public Vector3 Position;
-            [FieldOffset(32)]
+            [FieldOffset(16)]
             public Vector3 Velocity;
+            [FieldOffset(32)]
+            public Vector4 Rectangle;
             [FieldOffset(48)]
             public Vector2 Scale;
             [FieldOffset(56)]
             public int ListIndex;
+            [FieldOffset(60)]
+            public float Time;
             [FieldOffset(64)]
-            public Vector4 Rectangle;
+            public int AnimationIndex;
         }
 
         public const int MaxSets = 32;
@@ -156,23 +167,20 @@ namespace WyvernFramework.Sprites
                             },
                             new VertexInputAttributeDescription[]
                             {
-                                new VertexInputAttributeDescription( // Time
+                                new VertexInputAttributeDescription( // Position
                                         0, 0, Format.R32G32B32SFloat, 0
                                     ),
-                                new VertexInputAttributeDescription( // Position
-                                        1, 0, Format.R32G32B32SFloat, 16
-                                    ),
-                                new VertexInputAttributeDescription( // Velocity
-                                        2, 0, Format.R32G32SFloat, 32
+                                new VertexInputAttributeDescription( // Rectangle
+                                        1, 0, Format.R32G32B32A32SFloat, 32
                                     ),
                                 new VertexInputAttributeDescription( // Scale
-                                        3, 0, Format.R32G32SFloat, 48
+                                        2, 0, Format.R32G32SFloat, 48
                                     ),
                                 new VertexInputAttributeDescription( // ListIndex
-                                        4, 0, Format.R32SInt, 56
+                                        3, 0, Format.R32SInt, 56
                                     ),
-                                new VertexInputAttributeDescription( // ListIndex
-                                        5, 0, Format.R32G32B32A32SFloat, 64
+                                new VertexInputAttributeDescription( // Time
+                                        4, 0, Format.R32SFloat, 60
                                     )
                             }
                         ),
@@ -318,7 +326,7 @@ namespace WyvernFramework.Sprites
                             );
                     }
                     buffer.CmdBindDescriptorSet(PipelineBindPoint.Compute, ComputePipelineLayout, descriptorSet);
-                    buffer.CmdDispatch((int)MathF.Ceiling(list.Count / 256f), 1, 1);
+                    buffer.CmdDispatch((int)MathF.Ceiling(list.Count / 1024f), 1, 1);
                     buffer.CmdPipelineBarrier(
                             PipelineStages.ComputeShader, PipelineStages.VertexInput,
                             bufferMemoryBarriers: new BufferMemoryBarrier[]

@@ -5,7 +5,7 @@ namespace WyvernFramework
 {
     public class InstanceList
     {
-        public const int MaxInstances = 200000;
+        public const int MaxInstances = 100000;
 
         private List<RenderInstance> Instances { get; } = new List<RenderInstance>();
 
