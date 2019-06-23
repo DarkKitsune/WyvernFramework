@@ -64,8 +64,8 @@ namespace Demos.Scenes
             for (var i = 0; i < InstanceList.MaxInstances; i++)
             {
                 var vel = new Vector3(
-                        -50f + (float)rand.NextDouble() * 100f,
-                        -50f + (float)rand.NextDouble() * 100f,
+                        -30f + (float)rand.NextDouble() * 60f,
+                        -30f + (float)rand.NextDouble() * 60f,
                         0f
                     );
                 new SpriteInstance(SpriteEffect, Vector3.Zero, vel, new Vector2(16, 16), Content["TriangleTexture"] as Texture2D, new Rect2D(0, 0, 16, 16));

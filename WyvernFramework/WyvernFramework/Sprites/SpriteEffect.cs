@@ -15,34 +15,42 @@ namespace WyvernFramework.Sprites
         {
             [FieldOffset(0)]
             public float Time;
-            [FieldOffset(4)]
-            public Vector3 Position;
             [FieldOffset(16)]
+            public Vector3 Position;
+            [FieldOffset(32)]
             public Vector3 Velocity;
-            [FieldOffset(28)]
+            [FieldOffset(48)]
             public Vector2 Scale;
-            [FieldOffset(36)]
+            [FieldOffset(56)]
             public int ListIndex;
-            [FieldOffset(40)]
+            [FieldOffset(64)]
             public Vector4 Rectangle;
         }
 
-        public const int MaxSets = 16;
+        public const int MaxSets = 32;
 
+        private ShaderModule ComputeShader;
         private ShaderModule VertexShader;
         private ShaderModule FragmentShader;
         private Sampler TextureSampler;
-        private DescriptorPool DescriptorPool;
-        private DescriptorSetLayout DescriptorSetLayout;
-        private Dictionary<InstanceList, DescriptorSet> DescriptorSets { get; } = new Dictionary<InstanceList, DescriptorSet>();
+        private DescriptorPool GraphicsDescriptorPool;
+        private DescriptorPool ComputeDescriptorPool;
+        private DescriptorSetLayout GraphicsDescriptorSetLayout;
+        private DescriptorSetLayout ComputeDescriptorSetLayout;
+        private Dictionary<InstanceList, DescriptorSet> GraphicsDescriptorSets { get; } = new Dictionary<InstanceList, DescriptorSet>();
+        private Dictionary<InstanceList, DescriptorSet> ComputeDescriptorSets { get; } = new Dictionary<InstanceList, DescriptorSet>();
         private VKBuffer<CameraUniformBlock> CameraUniform;
         private VKBuffer<float> TimeUniform;
         private Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>> InstanceBuffers { get; }
                 = new Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>>();
-        private PipelineLayout PipelineLayout;
-        private Pipeline Pipeline;
+        private PipelineLayout GraphicsPipelineLayout;
+        private PipelineLayout ComputePipelineLayout;
+        private Pipeline GraphicsPipeline;
+        private Pipeline ComputePipeline;
         private RenderPassObject RenderPass { get; }
         private Dictionary<VKImage, Framebuffer> Framebuffers { get; } = new Dictionary<VKImage, Framebuffer>();
+        private Dictionary<VKImage, CommandBuffer> ComputeCommandBuffers { get; } = new Dictionary<VKImage, CommandBuffer>();
+        private Semaphore ComputeSemaphore;
 
         public SpriteEffect(Graphics graphics, RenderPassObject renderPass, ImageLayout initialLayout,
                 Accesses initialAccess, PipelineStages initialStage)
@@ -56,6 +64,7 @@ namespace WyvernFramework.Sprites
 
         public override void OnStart()
         {
+            ComputeShader = Graphics.Content.LoadShaderModule(Path.Combine("Sprites", "BasicSprites.comp.spv"));
             VertexShader = Graphics.Content.LoadShaderModule(Path.Combine("Sprites", "BasicSprites.vert.spv"));
             FragmentShader = Graphics.Content.LoadShaderModule(Path.Combine("Sprites", "BasicSprites.frag.spv"));
             TextureSampler = Graphics.Device.CreateSampler(new SamplerCreateInfo
@@ -63,7 +72,7 @@ namespace WyvernFramework.Sprites
                 MinFilter = Filter.Linear,
                 MagFilter = Filter.Linear
             });
-            DescriptorPool = Graphics.Device.CreateDescriptorPool(new DescriptorPoolCreateInfo(
+            GraphicsDescriptorPool = Graphics.Device.CreateDescriptorPool(new DescriptorPoolCreateInfo(
                     MaxSets, new DescriptorPoolSize[]
                     {
                         new DescriptorPoolSize(DescriptorType.UniformBuffer, 1),
@@ -72,7 +81,15 @@ namespace WyvernFramework.Sprites
                     },
                     DescriptorPoolCreateFlags.FreeDescriptorSet
                 ));
-            DescriptorSetLayout = Graphics.Device.CreateDescriptorSetLayout(new DescriptorSetLayoutCreateInfo(
+            ComputeDescriptorPool = Graphics.Device.CreateDescriptorPool(new DescriptorPoolCreateInfo(
+                    MaxSets, new DescriptorPoolSize[]
+                    {
+                        new DescriptorPoolSize(DescriptorType.StorageBuffer, 1),
+                        new DescriptorPoolSize(DescriptorType.UniformBuffer, 1)
+                    },
+                    DescriptorPoolCreateFlags.FreeDescriptorSet
+                ));
+            GraphicsDescriptorSetLayout = Graphics.Device.CreateDescriptorSetLayout(new DescriptorSetLayoutCreateInfo(
                     new[]
                     {
                         new DescriptorSetLayoutBinding(
@@ -95,11 +112,31 @@ namespace WyvernFramework.Sprites
                             )
                     }
                 ));
-            PipelineLayout = Graphics.Device.CreatePipelineLayout(new PipelineLayoutCreateInfo(
-                    setLayouts: new[] { DescriptorSetLayout }
+            ComputeDescriptorSetLayout = Graphics.Device.CreateDescriptorSetLayout(new DescriptorSetLayoutCreateInfo(
+                    new[]
+                    {
+                        new DescriptorSetLayoutBinding(
+                                binding: 0,
+                                descriptorType: DescriptorType.StorageBuffer,
+                                descriptorCount: 1,
+                                stageFlags: ShaderStages.Compute
+                            ),
+                        new DescriptorSetLayoutBinding(
+                                binding: 1,
+                                descriptorType: DescriptorType.UniformBuffer,
+                                descriptorCount: 1,
+                                stageFlags: ShaderStages.Compute
+                            )
+                    }
                 ));
-            Pipeline = Graphics.Device.CreateGraphicsPipeline(new GraphicsPipelineCreateInfo(
-                    layout: PipelineLayout,
+            GraphicsPipelineLayout = Graphics.Device.CreatePipelineLayout(new PipelineLayoutCreateInfo(
+                    setLayouts: new[] { GraphicsDescriptorSetLayout }
+                ));
+            ComputePipelineLayout = Graphics.Device.CreatePipelineLayout(new PipelineLayoutCreateInfo(
+                    setLayouts: new[] { ComputeDescriptorSetLayout }
+                ));
+            GraphicsPipeline = Graphics.Device.CreateGraphicsPipeline(new GraphicsPipelineCreateInfo(
+                    layout: GraphicsPipelineLayout,
                     renderPass: RenderPass.RenderPass,
                     subpass: 0,
                     stages: new[]
@@ -123,19 +160,19 @@ namespace WyvernFramework.Sprites
                                         0, 0, Format.R32G32B32SFloat, 0
                                     ),
                                 new VertexInputAttributeDescription( // Position
-                                        1, 0, Format.R32G32B32SFloat, 4
+                                        1, 0, Format.R32G32B32SFloat, 16
                                     ),
                                 new VertexInputAttributeDescription( // Velocity
-                                        2, 0, Format.R32G32SFloat, 16
+                                        2, 0, Format.R32G32SFloat, 32
                                     ),
                                 new VertexInputAttributeDescription( // Scale
-                                        3, 0, Format.R32G32SFloat, 28
+                                        3, 0, Format.R32G32SFloat, 48
                                     ),
                                 new VertexInputAttributeDescription( // ListIndex
-                                        4, 0, Format.R32SInt, 36
+                                        4, 0, Format.R32SInt, 56
                                     ),
                                 new VertexInputAttributeDescription( // ListIndex
-                                        5, 0, Format.R32G32B32A32SFloat, 40
+                                        5, 0, Format.R32G32B32A32SFloat, 64
                                     )
                             }
                         ),
@@ -169,6 +206,11 @@ namespace WyvernFramework.Sprites
                             }
                         )
                 ));
+            ComputePipeline = Graphics.Device.CreateComputePipeline(new ComputePipelineCreateInfo(
+                    stage: new PipelineShaderStageCreateInfo(ShaderStages.Compute, ComputeShader, "main"),
+                    layout: ComputePipelineLayout,
+                    flags: PipelineCreateFlags.None
+                ));
             CameraUniform = VKBuffer<CameraUniformBlock>.UniformBuffer(
                     $"{nameof(SpriteEffect)}.{nameof(CameraUniform)}",
                     Graphics,
@@ -179,6 +221,7 @@ namespace WyvernFramework.Sprites
                     Graphics,
                     MaxSets
                 );
+            ComputeSemaphore = Graphics.Device.CreateSemaphore();
             SetCamera(Vector2.Zero, Graphics.Window.Size);
         }
 
@@ -189,12 +232,21 @@ namespace WyvernFramework.Sprites
                     width: image.Extent.Width,
                     height: image.Extent.Height
                 )));
+            ComputeCommandBuffers.Add(
+                    image,
+                    Graphics.ComputeQueueFamily.CreateCommandBuffers(
+                            CommandBufferLevel.Primary,
+                            1
+                        )[0]
+                );
         }
 
         protected override void OnUnregisterImage(VKImage image)
         {
             Framebuffers[image].Dispose();
             Framebuffers.Remove(image);
+            ComputeCommandBuffers[image].Dispose();
+            ComputeCommandBuffers.Remove(image);
         }
 
         protected override void OnRecordCommandBuffer(VKImage image, CommandBuffer buffer)
@@ -223,21 +275,62 @@ namespace WyvernFramework.Sprites
                         RenderPass.RenderPass,
                         new Rect2D(0, 0, image.Extent.Width, image.Extent.Height)
                     ));
-                buffer.CmdBindPipeline(PipelineBindPoint.Graphics, Pipeline);
+                buffer.CmdBindPipeline(PipelineBindPoint.Graphics, GraphicsPipeline);
                 foreach (var list in nonEmptyLists)
                 {
-                    if (!DescriptorSets.TryGetValue(list, out var descriptorSet))
+                    if (!GraphicsDescriptorSets.TryGetValue(list, out var descriptorSet))
                     {
                         throw new InvalidOperationException(
-                                $"No {nameof(DescriptorSet)} corresponding to {nameof(InstanceList)} {list}"
+                                $"No graphics {nameof(DescriptorSet)} corresponding to {nameof(InstanceList)} {list}"
                             );
                     }
 
-                    buffer.CmdBindDescriptorSet(PipelineBindPoint.Graphics, PipelineLayout, descriptorSet);
+                    buffer.CmdBindDescriptorSet(PipelineBindPoint.Graphics, GraphicsPipelineLayout, descriptorSet);
                     buffer.CmdBindVertexBuffers(0, 1, new VulkanCore.Buffer[] { InstanceBuffers[list].Buffer }, new long[] { 0L });
                     buffer.CmdDraw(6, list.Count);
                 }
                 buffer.CmdEndRenderPass();
+            }
+            buffer.End();
+
+            buffer = ComputeCommandBuffers[image];
+            buffer.Begin(new CommandBufferBeginInfo());
+            if (nonEmptyLists.Any())
+            {
+                buffer.CmdBindPipeline(PipelineBindPoint.Compute, ComputePipeline);
+                foreach (var list in nonEmptyLists)
+                {
+                    buffer.CmdPipelineBarrier(
+                            PipelineStages.VertexInput, PipelineStages.ComputeShader,
+                            bufferMemoryBarriers: new BufferMemoryBarrier[]
+                            {
+                                new BufferMemoryBarrier(
+                                        InstanceBuffers[list].Buffer,
+                                        Accesses.VertexAttributeRead, Accesses.ShaderWrite,
+                                        0L, list.Count
+                                    )
+                            }
+                        );
+                    if (!ComputeDescriptorSets.TryGetValue(list, out var descriptorSet))
+                    {
+                        throw new InvalidOperationException(
+                                $"No compute {nameof(DescriptorSet)} corresponding to {nameof(InstanceList)} {list}"
+                            );
+                    }
+                    buffer.CmdBindDescriptorSet(PipelineBindPoint.Compute, ComputePipelineLayout, descriptorSet);
+                    buffer.CmdDispatch((int)MathF.Ceiling(list.Count / 256f), 1, 1);
+                    buffer.CmdPipelineBarrier(
+                            PipelineStages.ComputeShader, PipelineStages.VertexInput,
+                            bufferMemoryBarriers: new BufferMemoryBarrier[]
+                            {
+                                new BufferMemoryBarrier(
+                                        InstanceBuffers[list].Buffer,
+                                        Accesses.ShaderWrite, Accesses.VertexAttributeRead,
+                                        0L, list.Count
+                                    )
+                            }
+                        );
+                }
             }
             buffer.End();
         }
@@ -247,8 +340,8 @@ namespace WyvernFramework.Sprites
             if (AnyUpdatedInstanceLists)
             {
                 UpdateLists();
-                RecreateDescriptorSets();
                 RecreateInstanceBuffers();
+                RecreateDescriptorSets();
                 Refresh();
             }
             unsafe
@@ -261,8 +354,12 @@ namespace WyvernFramework.Sprites
                 }
                 TimeUniform.Unmap();
             }
+            var graphicsCommandBuffer = GetCommandBuffer(image);
+            Graphics.ComputeQueueFamily.First.Submit(
+                   start, PipelineStages.ComputeShader, ComputeCommandBuffers[image], ComputeSemaphore
+               );
             Graphics.GraphicsQueueFamily.First.Submit(
-                    start, PipelineStages.ColorAttachmentOutput, GetCommandBuffer(image), FinishedSemaphore
+                    ComputeSemaphore, PipelineStages.ColorAttachmentOutput, graphicsCommandBuffer, FinishedSemaphore
                 );
         }
 
@@ -270,18 +367,22 @@ namespace WyvernFramework.Sprites
         {
             Graphics.Device.WaitIdle();
             // Clean up
-            foreach (var set in DescriptorSets.Values)
+            foreach (var set in GraphicsDescriptorSets.Values)
                 set.Dispose();
-            DescriptorSets.Clear();
+            GraphicsDescriptorSets.Clear();
+            foreach (var set in ComputeDescriptorSets.Values)
+                set.Dispose();
+            ComputeDescriptorSets.Clear();
             // Create sets
             foreach (var keyList in InstanceLists)
             {
                 var texture = (Texture2D)keyList.Key;
                 var list = keyList.Value;
-                var set = DescriptorPool.AllocateSets(new DescriptorSetAllocateInfo(
-                        1, DescriptorSetLayout
+                // Graphics set
+                var set = GraphicsDescriptorPool.AllocateSets(new DescriptorSetAllocateInfo(
+                        1, GraphicsDescriptorSetLayout
                     ))[0];
-                DescriptorPool.UpdateSets(
+                GraphicsDescriptorPool.UpdateSets(
                         new WriteDescriptorSet[]
                         {
                             new WriteDescriptorSet(
@@ -311,7 +412,31 @@ namespace WyvernFramework.Sprites
                                 )
                         }
                     );
-                DescriptorSets.Add(list, set);
+                GraphicsDescriptorSets.Add(list, set);
+                // Compute set
+                set = ComputeDescriptorPool.AllocateSets(new DescriptorSetAllocateInfo(
+                        1, ComputeDescriptorSetLayout
+                    ))[0];
+                ComputeDescriptorPool.UpdateSets(
+                        new WriteDescriptorSet[]
+                        {
+                            new WriteDescriptorSet(
+                                    set, 0, 0, 1, DescriptorType.StorageBuffer,
+                                    bufferInfo: new DescriptorBufferInfo[]
+                                    {
+                                        new DescriptorBufferInfo(InstanceBuffers[list].Buffer)
+                                    }
+                                ),
+                            new WriteDescriptorSet(
+                                    set, 1, 0, 1, DescriptorType.UniformBuffer,
+                                    bufferInfo: new DescriptorBufferInfo[]
+                                    {
+                                        new DescriptorBufferInfo(TimeUniform.Buffer)
+                                    }
+                                )
+                        }
+                    );
+                ComputeDescriptorSets.Add(list, set);
             }
         }
 
@@ -325,7 +450,7 @@ namespace WyvernFramework.Sprites
                 VKBuffer<SpriteInstanceInfo> buffer;
                 if (!InstanceBuffers.TryGetValue(list, out buffer))
                 {
-                    buffer = VKBuffer<SpriteInstanceInfo>.VertexBuffer(
+                    buffer = VKBuffer<SpriteInstanceInfo>.StorageBuffer(
                             $"{nameof(SpriteEffect)} instance buffer for list {list}",
                             Graphics,
                             InstanceList.MaxInstances

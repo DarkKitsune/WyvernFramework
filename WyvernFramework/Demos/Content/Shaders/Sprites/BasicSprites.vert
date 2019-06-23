@@ -1,6 +1,6 @@
 #version 450
 
-const int MAX_LISTS = 16;
+const int MAX_LISTS = 32;
 
 layout (location = 0) in float in_InstanceTime;
 layout (location = 1) in vec3 in_InstancePosition;
@@ -10,13 +10,13 @@ layout (location = 4) in int in_InstanceListIndex;
 layout (location = 5) in vec4 in_InstanceRectangle;
 layout (location = 0) out vec2 out_TexCoord;
 
-layout (binding = 0) uniform struct_Camera
+layout (std140, binding = 0) uniform struct_Camera
 {
 	mat4 view;
 	mat4 projection;
 } block_Camera;
 
-layout (binding = 2) uniform struct_Time
+layout (std140, binding = 2) uniform struct_Time
 {
 	float listTime[MAX_LISTS];
 } time;
@@ -33,7 +33,5 @@ void main()
     int index[6] = int[6](0, 1, 2, 2, 3, 0);
 
     out_TexCoord = in_InstanceRectangle.xy + in_InstanceRectangle.zw * texCoord[index[gl_VertexIndex]];
-    float timePassed = time.listTime[in_InstanceListIndex] - in_InstanceTime;
-    vec3 iPos = in_InstancePosition + in_InstanceVelocity * timePassed;
-    gl_Position = block_Camera.projection * block_Camera.view * vec4(iPos.xy + pos[index[gl_VertexIndex]] * in_InstanceScale, iPos.z, 1);
+    gl_Position = block_Camera.projection * block_Camera.view * vec4(in_InstancePosition.xy + pos[index[gl_VertexIndex]] * in_InstanceScale, in_InstancePosition.z, 1);
 }

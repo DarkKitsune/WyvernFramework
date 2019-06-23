@@ -1,47 +1,37 @@
 #version 450
 
+const int MAX_LISTS = 32;
+
 layout (local_size_x = 256) in;
 
-struct VertexParticle
+struct Instance
 {
-    vec2 Position;
-    vec2 Velocity;
-    vec4 Color;
+    float Time;
+    vec3 Position;
+    vec3 Velocity;
+    vec2 Scale;
+    int ListIndex;
+    vec4 Rectangle;
 };
 
-layout(std140, binding = 0) buffer layout_Particles 
+layout (std140, binding = 0) buffer buffer_Instances
 {
-    VertexParticle Particles[];
+    Instance instances[];
 };
 
-layout (binding = 1) uniform layout_Global
+layout (std140, binding = 1) uniform struct_Time
 {
-    vec2 DstPosition;
-    float DeltaTime;
-    float Padding;
-};
+    float listTime[MAX_LISTS];
+} time;
 
 void main() 
 {
     uint index = gl_GlobalInvocationID.x;
-    vec2 position = Particles[index].Position;
-    vec2 velocity = Particles[index].Velocity;
-    vec4 color = Particles[index].Color;
-
-    // Adjust velocity towards destination.
-    vec2 deltaPosition = DstPosition - position;
-    float distanceSquared = dot(deltaPosition, deltaPosition);
-    velocity += deltaPosition * (1.0 / (distanceSquared)) * -0.0005;
-
-    // Move position by velocity.
-    position += velocity * DeltaTime;
-
-    // Collide from window edges.
-    if (position.x < -1 || position.x > 1 || position.y < -1 || position.y > 1)
-    {
-        velocity = -velocity;
-        position = clamp(position, vec2(-1, -1), vec2(1, 1));
-    }
-
-    Particles[index] = VertexParticle(position, velocity, color);
+    Instance instance = instances[index];
+    float currentTime = time.listTime[instance.ListIndex];
+    float previousTime = instance.Time;
+    float timePassed = currentTime - previousTime;
+    instance.Time = currentTime;
+    instance.Position += instance.Velocity * timePassed;
+    instances[index] = instance;
 }
