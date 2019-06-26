@@ -15,7 +15,7 @@ namespace Demos
         /// <summary>
         /// App window constructor
         /// </summary>
-        public AppWindow() : base(new Vector2(1280, 720), "Test App", 30.0)
+        public AppWindow() : base(new Vector2(1500, 1000), "Test App", 30.0)
         {
             // Create the menu scene
             MenuScene = new MenuScene(this);

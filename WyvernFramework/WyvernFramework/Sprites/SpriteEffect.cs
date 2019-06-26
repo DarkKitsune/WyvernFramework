@@ -10,15 +10,6 @@ namespace WyvernFramework.Sprites
 {
     public class SpriteEffect : InstanceRendererEffect
     {
-        [StructLayout(LayoutKind.Explicit, Size = 32)]
-        private struct Instruction
-        {
-            [FieldOffset(0)]
-            public Vector4 Argument;
-            [FieldOffset(16)]
-            public int Type;
-        }
-
         [StructLayout(LayoutKind.Explicit, Size = 80)]
         private struct SpriteInstanceInfo
         {
@@ -35,7 +26,14 @@ namespace WyvernFramework.Sprites
             [FieldOffset(60)]
             public float Time;
             [FieldOffset(64)]
-            public int AnimationIndex;
+            public float AnimationTime;
+        }
+
+        [StructLayout(LayoutKind.Explicit, Size = 16)]
+        private struct ListTime
+        {
+            [FieldOffset(0)]
+            public float Time;
         }
 
         public const int MaxSets = 32;
@@ -51,7 +49,8 @@ namespace WyvernFramework.Sprites
         private Dictionary<InstanceList, DescriptorSet> GraphicsDescriptorSets { get; } = new Dictionary<InstanceList, DescriptorSet>();
         private Dictionary<InstanceList, DescriptorSet> ComputeDescriptorSets { get; } = new Dictionary<InstanceList, DescriptorSet>();
         private VKBuffer<CameraUniformBlock> CameraUniform;
-        private VKBuffer<float> TimeUniform;
+        private VKBuffer<ListTime> TimeUniform;
+        private VKBuffer<Animation.ComputeInstruction> AnimationUniform;
         private Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>> InstanceBuffers { get; }
                 = new Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>>();
         private PipelineLayout GraphicsPipelineLayout;
@@ -86,17 +85,18 @@ namespace WyvernFramework.Sprites
             GraphicsDescriptorPool = Graphics.Device.CreateDescriptorPool(new DescriptorPoolCreateInfo(
                     MaxSets, new DescriptorPoolSize[]
                     {
-                        new DescriptorPoolSize(DescriptorType.UniformBuffer, 1),
-                        new DescriptorPoolSize(DescriptorType.CombinedImageSampler, 1),
-                        new DescriptorPoolSize(DescriptorType.UniformBuffer, 1)
+                        new DescriptorPoolSize(DescriptorType.UniformBuffer, MaxSets),
+                        new DescriptorPoolSize(DescriptorType.CombinedImageSampler, MaxSets),
+                        new DescriptorPoolSize(DescriptorType.UniformBuffer, MaxSets)
                     },
                     DescriptorPoolCreateFlags.FreeDescriptorSet
                 ));
             ComputeDescriptorPool = Graphics.Device.CreateDescriptorPool(new DescriptorPoolCreateInfo(
                     MaxSets, new DescriptorPoolSize[]
                     {
-                        new DescriptorPoolSize(DescriptorType.StorageBuffer, 1),
-                        new DescriptorPoolSize(DescriptorType.UniformBuffer, 1)
+                        new DescriptorPoolSize(DescriptorType.StorageBuffer, MaxSets),
+                        new DescriptorPoolSize(DescriptorType.UniformBuffer, MaxSets),
+                        new DescriptorPoolSize(DescriptorType.UniformBuffer, MaxSets)
                     },
                     DescriptorPoolCreateFlags.FreeDescriptorSet
                 ));
@@ -129,6 +129,12 @@ namespace WyvernFramework.Sprites
                         new DescriptorSetLayoutBinding(
                                 binding: 0,
                                 descriptorType: DescriptorType.StorageBuffer,
+                                descriptorCount: 1,
+                                stageFlags: ShaderStages.Compute
+                            ),
+                        new DescriptorSetLayoutBinding(
+                                binding: 2,
+                                descriptorType: DescriptorType.UniformBuffer,
                                 descriptorCount: 1,
                                 stageFlags: ShaderStages.Compute
                             ),
@@ -224,10 +230,15 @@ namespace WyvernFramework.Sprites
                     Graphics,
                     1
                 );
-            TimeUniform = VKBuffer<float>.UniformBuffer(
+            TimeUniform = VKBuffer<ListTime>.UniformBuffer(
                     $"{nameof(SpriteEffect)}.{nameof(TimeUniform)}",
                     Graphics,
                     MaxSets
+                );
+            AnimationUniform = VKBuffer<Animation.ComputeInstruction>.UniformBuffer(
+                    $"{nameof(SpriteEffect)}.{nameof(AnimationUniform)}",
+                    Graphics,
+                    Animation.MaxInstructions * MaxSets
                 );
             ComputeSemaphore = Graphics.Device.CreateSemaphore();
             SetCamera(Vector2.Zero, Graphics.Window.Size);
@@ -349,23 +360,27 @@ namespace WyvernFramework.Sprites
             {
                 UpdateLists();
                 RecreateInstanceBuffers();
+                RecreateAnimations();
                 RecreateDescriptorSets();
                 Refresh();
             }
             unsafe
             {
-                var ptr = TimeUniform.Map(0, MaxSets);
-                var i = 0;
-                foreach (var list in InstanceLists.Values.Where(e => e.Count > 0))
+                var nonEmpty = InstanceLists.Values.Where(e => e.Count > 0);
+                var ptr = TimeUniform.Map(0, nonEmpty.Count());
+                foreach (var list in nonEmpty)
                 {
-                    *(ptr++) = (float)list.TimeSinceLastUpdate;
+                    *(ptr++) = new ListTime
+                    {
+                        Time = (float)list.TimeSinceLastUpdate
+                    };
                 }
                 TimeUniform.Unmap();
             }
             var graphicsCommandBuffer = GetCommandBuffer(image);
             Graphics.ComputeQueueFamily.First.Submit(
-                   start, PipelineStages.ComputeShader, ComputeCommandBuffers[image], ComputeSemaphore
-               );
+                    start, PipelineStages.ComputeShader, ComputeCommandBuffers[image], ComputeSemaphore
+                );
             Graphics.GraphicsQueueFamily.First.Submit(
                     ComputeSemaphore, PipelineStages.ColorAttachmentOutput, graphicsCommandBuffer, FinishedSemaphore
                 );
@@ -384,7 +399,7 @@ namespace WyvernFramework.Sprites
             // Create sets
             foreach (var keyList in InstanceLists)
             {
-                var texture = (Texture2D)keyList.Key;
+                var (texture, animation) = ((Texture2D, Animation))keyList.Key;
                 var list = keyList.Value;
                 // Graphics set
                 var set = GraphicsDescriptorPool.AllocateSets(new DescriptorSetAllocateInfo(
@@ -441,6 +456,13 @@ namespace WyvernFramework.Sprites
                                     {
                                         new DescriptorBufferInfo(TimeUniform.Buffer)
                                     }
+                                ),
+                            new WriteDescriptorSet(
+                                    set, 2, 0, 1, DescriptorType.UniformBuffer,
+                                    bufferInfo: new DescriptorBufferInfo[]
+                                    {
+                                        new DescriptorBufferInfo(AnimationUniform.Buffer)
+                                    }
                                 )
                         }
                     );
@@ -483,7 +505,8 @@ namespace WyvernFramework.Sprites
                                 Velocity = inst.Velocity,
                                 Scale = inst.Scale,
                                 ListIndex = listInd,
-                                Rectangle = inst.Rectangle
+                                Rectangle = inst.Rectangle,
+                                AnimationTime = inst.AnimationTime
                             };
                             ptr++;
                         }
@@ -535,6 +558,24 @@ namespace WyvernFramework.Sprites
                     }
                 }
                 listInd++;
+            }
+        }
+
+        private void RecreateAnimations()
+        {
+            unsafe
+            {
+                var nonEmpty = InstanceLists.Where(e => e.Value.Count > 0);
+                var ptr = (byte*)AnimationUniform.Map(0, nonEmpty.Count() * Animation.MaxInstructions);
+                foreach (var keyList in nonEmpty)
+                {
+                    var (texture, animation) = ((Texture2D, Animation))keyList.Key;
+                    if (animation is null)
+                        Animation.WriteNullToBuffer(ptr, out ptr);
+                    else
+                        animation.WriteToBuffer(ptr, out ptr);
+                }
+                AnimationUniform.Unmap();
             }
         }
 

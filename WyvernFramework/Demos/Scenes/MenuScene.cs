@@ -61,14 +61,37 @@ namespace Demos.Scenes
                 );
             SpriteEffect.Start();
             var rand = new Random();
+            var tex = Content["TriangleTexture"] as Texture2D;
+            var anims = new[] {
+                    new Animation(new[] {
+                        Animation.Instruction.SetScale(0f, new Vector2(12f, 12f)),
+                        Animation.Instruction.LerpScale(0f, 1f, new Vector2(30f, 10f)),
+                        Animation.Instruction.LerpScale(1f, 1f, new Vector2(8f, 20f)),
+                        Animation.Instruction.LerpScale(2f, 1f, new Vector2(12f, 12f)),
+                        Animation.Instruction.SetTime(3f, 0f)
+                }),
+                    new Animation(new[] {
+                        Animation.Instruction.SetScale(0f, new Vector2(26f, 26f)),
+                        Animation.Instruction.LerpScale(0f, 1f, new Vector2(8f, 30f)),
+                        Animation.Instruction.LerpScale(1f, 1f, new Vector2(20f, 8f)),
+                        Animation.Instruction.LerpScale(2f, 1f, new Vector2(26f, 26f)),
+                        Animation.Instruction.SetTime(3f, 0f)
+                })
+            };
+
             for (var i = 0; i < InstanceList.MaxInstances; i++)
             {
                 var vel = new Vector3(
-                        -100f + (float)rand.NextDouble() * 200f,
-                        -100f + (float)rand.NextDouble() * 200f,
+                        -75f + (float)rand.NextDouble() * 150f,
+                        -75f + (float)rand.NextDouble() * 150f,
                         0f
                     );
-                new SpriteInstance(SpriteEffect, Vector3.Zero, vel, new Vector2(32, 32), Content["TriangleTexture"] as Texture2D, new Rect2D(0, 0, 32, 32));
+                var pos = new Vector3(
+                        -100f + (float)rand.NextDouble() * 200f,
+                        -100f + (float)rand.NextDouble() * 200f,
+                       -1f + (float)rand.NextDouble() * 2f
+                    );
+                new SpriteInstance(SpriteEffect, pos, vel, new Vector2(32, 32), tex, new Rect2D(0, 0, 32, 32), anims[i % 2]);
             }
             TransitionEffect = new TransitionEffect(
                     Graphics,

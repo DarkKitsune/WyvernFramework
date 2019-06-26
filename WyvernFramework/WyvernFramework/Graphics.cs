@@ -368,7 +368,7 @@ namespace WyvernFramework
         /// <summary>
         /// Current time in seconds
         /// </summary>
-        public double CurrentTime => Stopwatch.Elapsed.TotalSeconds;
+        public double CurrentTime { get; private set; }
 
         /// <summary>
         /// Semaphore for when the next swapchain image is available
@@ -574,6 +574,15 @@ namespace WyvernFramework
             }
             // Misc
             Stopwatch = Stopwatch.StartNew();
+            CurrentTime = 0.0;
+        }
+
+        /// <summary>
+        /// Update stuff
+        /// </summary>
+        public void Update()
+        {
+            CurrentTime = Stopwatch.Elapsed.TotalSeconds;
         }
 
         /// <summary>

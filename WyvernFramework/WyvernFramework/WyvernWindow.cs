@@ -154,6 +154,7 @@ namespace WyvernFramework
                 // Do OS events
                 PollEvents();
                 // Do update
+                Graphics.Update();
                 while (NeedsUpdate)
                     Update();
                 // Do draw

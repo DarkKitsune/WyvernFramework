@@ -91,5 +91,17 @@ namespace WyvernFramework
             var align = (int)Math.Ceiling((double)size / sizeof(float)) * sizeof(float);
             return (int)Math.Ceiling((double)offset / align) * align;
         }
+
+        /// <summary>
+        /// Align an offset using std140 alignment rules
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="position"></param>
+        /// <returns></returns>
+        public static int AlignSTD140(this int offset, int alignment)
+        {
+            var align = (int)Math.Ceiling((double)alignment / sizeof(float)) * sizeof(float);
+            return (int)Math.Ceiling((double)offset / align) * align;
+        }
     }
 }

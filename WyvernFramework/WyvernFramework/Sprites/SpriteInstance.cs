@@ -27,9 +27,11 @@ namespace WyvernFramework.Sprites
 
         public Vector4 Rectangle { get; }
 
-        //public Animation Animation { get; }
+        public Animation Animation { get; }
 
-        public SpriteInstance(SpriteEffect effect, Vector3 position, Vector3 velocity, Vector2 scale, Texture2D texture, Rect2D rectangle) : base(effect)
+        public float AnimationTime { get; }
+
+        public SpriteInstance(SpriteEffect effect, Vector3 position, Vector3 velocity, Vector2 scale, Texture2D texture, Rect2D rectangle, Animation animation) : base(effect)
         {
             StoredPosition = position;
             Velocity = velocity;
@@ -42,12 +44,14 @@ namespace WyvernFramework.Sprites
                     rectangle.Extent.Width / (float)texExtent.Width,
                     rectangle.Extent.Height / (float)texExtent.Height
                 );
+            Animation = animation;
+            AnimationTime = 0f;
             Register();
         }
 
         public override object GetListChoosingInformation()
         {
-            return Texture;
+            return (Texture, Animation);
         }
 
         protected override void OnStoreValues()

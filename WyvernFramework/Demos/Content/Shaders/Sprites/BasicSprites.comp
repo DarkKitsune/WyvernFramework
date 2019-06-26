@@ -1,8 +1,26 @@
 #version 450
 
 const int MAX_LISTS = 32;
+const int MAX_ANIMATION_INSTRUCTIONS = 64;
+
+const int INST_SETTIME = 1;
+const int INST_SETSCALE = 2;
+const int INST_LERPSCALE = 3;
 
 layout (local_size_x = 1024) in;
+
+struct Instruction
+{
+    vec4 Argument;
+    int Type;
+    float Time;
+};
+
+struct Animation
+{
+    int Length;
+    Instruction Instruction[MAX_ANIMATION_INSTRUCTIONS];
+};
 
 struct Instance
 {
@@ -12,7 +30,7 @@ struct Instance
     vec2 Scale;
     int ListIndex;
     float Time;
-    int AnimationIndex;
+    float AnimationTime;
 };
 
 layout (std140, binding = 0) buffer buffer_Instances
@@ -25,9 +43,33 @@ layout (std140, binding = 1) uniform struct_Time
     float listTime[MAX_LISTS];
 } time;
 
+layout (std140, binding = 2) uniform struct_Animation
+{
+    Animation animation[MAX_LISTS];
+} animation;
+
 Instance doMovement(Instance instance, float deltaTime)
 {
     instance.Position += instance.Velocity * deltaTime;
+    return instance;
+}
+
+Instance doAnimation(Instance instance)
+{
+    Animation anim = animation.animation[instance.ListIndex];
+    for (int i = 0; i < anim.Length; i++)
+    {
+        Instruction instruction = anim.Instruction[i];
+        float applies = float(instruction.Time <= instance.AnimationTime);
+        vec4 arg = instruction.Argument;
+        float interpLength = instruction.Argument.x;
+        vec3 interpArg = instruction.Argument.yzw;
+        float interpRatio = clamp((instance.AnimationTime - instruction.Time) / interpLength, 0.0, 1.0);
+
+        instance.Scale = mix(instance.Scale, arg.xy, applies * float(instruction.Type == INST_SETSCALE));
+        instance.Scale = mix(instance.Scale, interpArg.xy, applies * float(instruction.Type == INST_LERPSCALE) * interpRatio);
+        instance.AnimationTime = mix(instance.AnimationTime, arg.x, applies * float(instruction.Type == INST_SETTIME));
+    }
     return instance;
 }
 
@@ -42,8 +84,10 @@ void main()
 
     // Do logic
     instance = doMovement(instance, deltaTime);
+    instance = doAnimation(instance);
 
     // Update instance time and store it back in the buffer
     instance.Time = currentTime;
+    instance.AnimationTime += deltaTime;
     instances[index] = instance;
 }
