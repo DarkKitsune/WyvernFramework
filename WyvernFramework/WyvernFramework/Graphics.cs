@@ -17,9 +17,11 @@ namespace WyvernFramework
         /// <summary>
         /// The enabled Vulkan instance extensions
         /// </summary>
-        public static string[] EnabledInstanceExtensions { get; } = new[]
+        public static string[] EnabledInstanceExtensions { get; } = new string[]
         {
+#if DEBUG
             Constant.InstanceExtension.ExtDebugReport
+#endif
         };
 
         /// <summary>
@@ -33,9 +35,11 @@ namespace WyvernFramework
         /// <summary>
         /// The enabled Vulkan debug layers extensions
         /// </summary>
-        public static string[] EnabledDebugLayers { get; } = new[]
+        public static string[] EnabledDebugLayers { get; } = new string[]
         {
+#if DEBUG
             Constant.InstanceLayer.LunarGStandardValidation
+#endif
         };
 
         /// <summary>
@@ -150,9 +154,11 @@ namespace WyvernFramework
             }
             // Create the debug callback
             {
+#if DEBUG
                 DebugCallback = Instance.CreateDebugReportCallbackExt(new DebugReportCallbackCreateInfoExt(
                         DebugReportFlagsExt.All, OnDebugReport
                     ));
+#endif
             }
             // Flag that we are now initialized
             InitializedStatic = true;

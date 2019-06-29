@@ -51,6 +51,7 @@ namespace Demos.Scenes
             // Create and start a clear effect
             ClearEffect = new ClearEffect(Graphics, TriangleRenderPass);
             ClearEffect.Start();
+            ClearEffect.ClearColor = new ClearColorValue(0.5f, 0.7f, 0.9f);
             // Create and start triangle effect
             SpriteEffect = new SpriteEffect(
                     Graphics,
@@ -123,9 +124,6 @@ namespace Demos.Scenes
         /// </summary>
         public override void OnUpdate()
         {
-            // Update clear color for each swapchain image
-            for (var imageIndex = 0; imageIndex < Graphics.SwapchainAttachmentImages.Length; imageIndex++)
-                SetClearColor(imageIndex);
         }
 
         /// <summary>
@@ -142,18 +140,6 @@ namespace Demos.Scenes
             SpriteEffect.Draw(ClearEffect.FinishedSemaphore, Graphics.SwapchainAttachmentImages[imageIndex]);
             // We are finished when the triangle is drawn
             finished = SpriteEffect.FinishedSemaphore;
-        }
-
-        /// <summary>
-        /// Set the clear color for a swapchain image
-        /// </summary>
-        /// <param name="imageIndex"></param>
-        private void SetClearColor(int imageIndex)
-        {
-            // Generate clear color based on time
-            var hue = (DateTime.Now.Ticks / (double)TimeSpan.TicksPerSecond) * 45.0;
-            var color = new Color.HSV(hue % 360.0, 1.0, 1.0).ToRGB();
-            ClearEffect.ClearColor = new ClearColorValue(color.R / 255f, color.G / 255f, color.B / 255f);
         }
     }
 }

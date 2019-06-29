@@ -343,7 +343,7 @@ namespace WyvernFramework.Sprites
                             );
                     }
                     buffer.CmdBindDescriptorSet(PipelineBindPoint.Compute, ComputePipelineLayout, descriptorSet);
-                    buffer.CmdDispatch((int)MathF.Ceiling(list.Count / 1024f), 1, 1);
+                    buffer.CmdDispatch((int)MathF.Ceiling(list.Count / 512f), 1, 1);
                 }
             }
             buffer.End();

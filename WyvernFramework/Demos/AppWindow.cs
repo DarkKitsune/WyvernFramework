@@ -30,6 +30,8 @@ namespace Demos
         {
             // Update the menu scene
             MenuScene.Update();
+            // Set title
+            Title = $"Test App | UPS={1.0 / SmoothedUpdateDuration:0.00} FPS={1.0 / SmoothedDrawDuration:0.00}";
         }
 
         /// <summary>

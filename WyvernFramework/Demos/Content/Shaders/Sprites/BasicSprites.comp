@@ -6,7 +6,7 @@ const int MAX_ANIMATION_INSTRUCTIONS = 64;
 const int INST_SETSCALE = 1;
 const int INST_LERPSCALE = 2;
 
-layout (local_size_x = 1024) in;
+layout (local_size_x = 512) in;
 
 struct Instruction
 {

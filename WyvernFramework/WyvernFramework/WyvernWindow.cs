@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Numerics;
 using System.Collections.Generic;
+using System.Diagnostics;
 using VkGLFW3;
 using VulkanCore;
 using VulkanCore.Khr;
@@ -107,6 +108,20 @@ namespace WyvernFramework
         /// </summary>
         private bool NeedsUpdate => Graphics.CurrentTime >= LastUpdate + 1.0 / UpdateRate;
 
+        public double LastUpdateDuration { get; private set; }
+
+        public double LastDrawDuration { get; private set; }
+
+        public double SmoothedUpdateDuration { get; private set; }
+
+        public double SmoothedDrawDuration { get; private set; }
+
+        public Stopwatch UpdateTimer { get; }
+
+        public Stopwatch[] DrawTimer { get; }
+
+        private int LastImage = -1;
+
         /// <summary>
         /// Construct a window with a size and title
         /// </summary>
@@ -129,6 +144,11 @@ namespace WyvernFramework
             UpdateRate = updateRate;
             // Set last update so that an update will occur
             LastUpdate = Graphics.CurrentTime - 1.0 / UpdateRate;
+            // Create update and draw timers
+            UpdateTimer = new Stopwatch();
+            DrawTimer = new Stopwatch[Graphics.SwapchainAttachmentImages.Length];
+            for (var i = 0; i < Graphics.SwapchainAttachmentImages.Length; i++)
+                DrawTimer[i] = new Stopwatch();
             // If there is not already a Main window then use this one as the Main window
             if (Main is null)
                 Main = this;
@@ -139,6 +159,7 @@ namespace WyvernFramework
         /// </summary>
         public WyvernWindow() : this(new Vector2(1280, 720), "Wyvern")
         {
+
         }
 
         /// <summary>
@@ -167,6 +188,17 @@ namespace WyvernFramework
         /// </summary>
         public void Update()
         {
+            // Do timing
+            if (UpdateTimer.IsRunning)
+            {
+                LastUpdateDuration = UpdateTimer.Elapsed.TotalSeconds;
+                SmoothedUpdateDuration = (SmoothedUpdateDuration * 9.0 + LastUpdateDuration) / 10.0;
+                UpdateTimer.Restart();
+            }
+            else
+            {
+                UpdateTimer.Start();
+            }
             // Call update event
             OnUpdate();
             // Add to LastUpdate
@@ -185,8 +217,16 @@ namespace WyvernFramework
         /// </summary>
         public void Draw()
         {
+            // Do timing
+            if (LastImage >= 0)
+            {
+                LastDrawDuration = DrawTimer[LastImage].Elapsed.TotalSeconds;
+                SmoothedDrawDuration = (SmoothedDrawDuration * 9.0 + LastDrawDuration) / 10.0;
+            }
             // Get the next swapchain image
             var image = Graphics.NextSwapchainImage();
+            // Start timer
+            DrawTimer[image].Restart();
             // Wait for any previous rendering on this image to finish
             Graphics.RenderToImageFences[image].Wait();
             Graphics.RenderToImageFences[image].Reset();
@@ -194,6 +234,8 @@ namespace WyvernFramework
             OnDraw(Graphics.ImageAvailableSemaphore, image, out var onDrawEnd);
             Graphics.SignalRenderToImageFence(onDrawEnd, image);
             Graphics.PresentQueueFamily.HighestPriority.PresentKhr(Graphics.ReadyToPresentSemaphore, Graphics.Swapchain, image);
+            // Set last image
+            LastImage = image;
         }
 
         /// <summary>
