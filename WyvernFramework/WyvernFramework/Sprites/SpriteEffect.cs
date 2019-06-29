@@ -36,6 +36,15 @@ namespace WyvernFramework.Sprites
             public float Time;
         }
 
+        [StructLayout(LayoutKind.Explicit, Size = 80)]
+        private struct VertexInstance
+        {
+            [FieldOffset(0)]
+            public Matrix4x4 Matrix;
+            [FieldOffset(64)]
+            public Vector4 Rectangle;
+        }
+
         public const int MaxSets = 32;
 
         private ShaderModule ComputeShader;
@@ -53,8 +62,8 @@ namespace WyvernFramework.Sprites
         private VKBuffer<Animation.ComputeInstruction> AnimationUniform;
         private Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>> ComputeInstanceBuffers { get; }
                 = new Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>>();
-        private Dictionary<InstanceList, VKBuffer<Matrix4x4>> VertexInstanceBuffers { get; }
-                = new Dictionary<InstanceList, VKBuffer<Matrix4x4>>();
+        private Dictionary<InstanceList, VKBuffer<VertexInstance>> VertexInstanceBuffers { get; }
+                = new Dictionary<InstanceList, VKBuffer<VertexInstance>>();
         private PipelineLayout GraphicsPipelineLayout;
         private PipelineLayout ComputePipelineLayout;
         private Pipeline GraphicsPipeline;
@@ -175,23 +184,26 @@ namespace WyvernFramework.Sprites
                             {
                                 new VertexInputBindingDescription(
                                         0,
-                                        64,
+                                        Interop.SizeOf<VertexInstance>(),
                                         VertexInputRate.Instance
                                     )
                             },
                             new VertexInputAttributeDescription[]
                             {
-                                new VertexInputAttributeDescription( // Matrix row 0
+                                new VertexInputAttributeDescription( // Transform matrix row 0
                                         0, 0, Format.R32G32B32A32SFloat, 0
                                     ),
-                                new VertexInputAttributeDescription( // Matrix row 1
+                                new VertexInputAttributeDescription( // Transform matrix row 1
                                         1, 0, Format.R32G32B32A32SFloat, 16
                                     ),
-                                new VertexInputAttributeDescription( // Matrix row 2
+                                new VertexInputAttributeDescription( // Transform matrix row 2
                                         2, 0, Format.R32G32B32A32SFloat, 32
                                     ),
-                                new VertexInputAttributeDescription( // Matrix row 03
+                                new VertexInputAttributeDescription( // Transform matrix row 03
                                         3, 0, Format.R32G32B32A32SFloat, 48
+                                    ),
+                                new VertexInputAttributeDescription( // Rectangle
+                                        4, 0, Format.R32G32B32A32SFloat, 64
                                     )
                             }
                         ),
@@ -478,10 +490,10 @@ namespace WyvernFramework.Sprites
                         );
                     ComputeInstanceBuffers.Add(list, computeBuffer);
                 }
-                VKBuffer<Matrix4x4> vertexBuffer;
+                VKBuffer<VertexInstance> vertexBuffer;
                 if (!VertexInstanceBuffers.TryGetValue(list, out vertexBuffer))
                 {
-                    vertexBuffer = VKBuffer<Matrix4x4>.StorageBuffer(
+                    vertexBuffer = VKBuffer<VertexInstance>.StorageBuffer(
                             $"{nameof(SpriteEffect)} vertex instance buffer for list {list}",
                             Graphics,
                             InstanceList.MaxInstances

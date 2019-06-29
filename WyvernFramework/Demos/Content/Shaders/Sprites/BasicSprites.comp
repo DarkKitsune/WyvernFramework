@@ -32,6 +32,12 @@ struct Instance
     float AnimationTime;
 };
 
+struct VertexInstance
+{
+    mat4 Transform;
+    vec4 Rectangle;
+};
+
 layout (std140, binding = 0) buffer buffer_Instances
 {
     Instance instances[];
@@ -39,7 +45,7 @@ layout (std140, binding = 0) buffer buffer_Instances
 
 layout (std140, binding = 1) buffer buffer_Out
 {
-    mat4 matrices[];
+    VertexInstance vertexInstances[];
 };
 
 layout (std140, binding = 2) uniform struct_Time
@@ -103,6 +109,14 @@ mat4 buildMatrix(Instance instance)
     return mat;
 }
 
+VertexInstance buildVertexInstance(Instance instance)
+{
+    VertexInstance vinst;
+    vinst.Transform = buildMatrix(instance);
+    vinst.Rectangle = instance.Rectangle;
+    return vinst;
+}
+
 Instance animatedInstance(uint index)
 {
     Instance instance = instances[index];
@@ -123,5 +137,5 @@ void main()
     uint index = gl_GlobalInvocationID.x;
     Instance instance = animatedInstance(index);
     instances[index] = instance;
-    matrices[index] = buildMatrix(instance);
+    vertexInstances[index] = buildVertexInstance(instance);
 }
