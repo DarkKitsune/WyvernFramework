@@ -151,10 +151,10 @@ namespace WyvernFramework.Sprites
 
         public Vector2 GetScale(float time, Vector2 baseScale = default)
         {
-            time = time % (float)LastTime;
+            time %= (float)LastTime;
             var passedTime = 0f;
             var scale = baseScale;
-            for (var i = 0; i < Instructions.Length && passedTime < time; i++)
+            for (var i = 0; i < Instructions.Length; i++)
             {
                 var inst = Instructions[i];
                 var applies = inst.Time <= time;
@@ -163,9 +163,6 @@ namespace WyvernFramework.Sprites
                 var interpArg2 = new Vector2(arg.Y, arg.Z);
                 var interpArg3 = new Vector3(arg.Y, arg.Z, arg.W);
                 float interpRatio = Math.Clamp((time - inst.Time) / interpLength, 0f, 1f);
-                passedTime += i > 0
-                    ? inst.Time - Instructions[i - 1].Time
-                    : inst.Time;
                 if (applies)
                 {
                     switch (inst.Type)
@@ -175,11 +172,7 @@ namespace WyvernFramework.Sprites
                             break;
                         case InstructionType.LerpScale:
                             scale += (interpArg2 - scale) * interpRatio;
-                            break;/*
-                        case InstructionType.SetTime:
-                            time = arg.X;
-                            i = -1;
-                            break;*/
+                            break;
                     }
                 }
             }
