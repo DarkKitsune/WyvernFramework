@@ -3,8 +3,9 @@
 const int MAX_LISTS = 32;
 const int MAX_ANIMATION_INSTRUCTIONS = 64;
 
-const int INST_SETSCALE = 1;
-const int INST_LERPSCALE = 2;
+const int INST_SETSCALE =       1;
+const int INST_LERPSCALE =      2;
+const int INST_SETRECTANGLE =   3;
 
 layout (local_size_x = 512) in;
 
@@ -68,7 +69,7 @@ Instance doAnimation(Instance instance)
 {
     Animation anim = animation.animation[instance.ListIndex];
     float animTime = mod(instance.AnimationTime, anim.Instruction[anim.Length - 1].Time);
-    for (int i = 0; i < MAX_ANIMATION_INSTRUCTIONS; i++)
+    for (int i = 0; i < anim.Length; i++)
     {
         Instruction instruction = anim.Instruction[i];
         float applies = float(instruction.Time <= animTime);
@@ -79,6 +80,7 @@ Instance doAnimation(Instance instance)
 
         instance.Scale = mix(instance.Scale, arg.xy, applies * float(instruction.Type == INST_SETSCALE));
         instance.Scale = mix(instance.Scale, interpArg.xy, applies * float(instruction.Type == INST_LERPSCALE) * interpRatio);
+        instance.Rectangle = mix(instance.Rectangle, arg, applies * float(instruction.Type == INST_SETRECTANGLE));
     }
     return instance;
 }

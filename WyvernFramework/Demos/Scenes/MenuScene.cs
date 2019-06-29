@@ -67,14 +67,18 @@ namespace Demos.Scenes
                     new Animation(new[] {
                         Animation.Instruction.SetScale(0f, new Vector2(12f, 12f)),
                         Animation.Instruction.LerpScale(0f, 1f, new Vector2(30f, 10f)),
+                        Animation.Instruction.SetRectangle(0f, new Vector2(0f, 0f), new Vector2(1f, 1f)),
                         Animation.Instruction.LerpScale(1f, 1f, new Vector2(8f, 20f)),
+                        Animation.Instruction.SetRectangle(1f, new Vector2(0.6f, 0.6f), new Vector2(1f, 1f)),
                         Animation.Instruction.LerpScale(2f, 1f, new Vector2(12f, 12f)),
                         Animation.Instruction.None(3f)
                 }),
                     new Animation(new[] {
                         Animation.Instruction.SetScale(0f, new Vector2(26f, 26f)),
                         Animation.Instruction.LerpScale(0f, 1f, new Vector2(8f, 30f)),
+                        Animation.Instruction.SetRectangle(0f, new Vector2(0f, 0f), new Vector2(1f, 1f)),
                         Animation.Instruction.LerpScale(1f, 1f, new Vector2(20f, 8f)),
+                        Animation.Instruction.SetRectangle(1f, new Vector2(0f, 0f), new Vector2(0.5f, 0.5f)),
                         Animation.Instruction.LerpScale(2f, 1f, new Vector2(26f, 26f)),
                         Animation.Instruction.None(3f)
                 })

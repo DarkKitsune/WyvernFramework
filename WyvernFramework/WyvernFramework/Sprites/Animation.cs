@@ -19,7 +19,8 @@ namespace WyvernFramework.Sprites
         {
             None,
             SetScale,
-            LerpScale
+            LerpScale,
+            SetRectangle
         }
 
         /// <summary>
@@ -105,6 +106,11 @@ namespace WyvernFramework.Sprites
             public static Instruction LerpScale(float time, float length, Vector2 scale)
             {
                 return new Instruction(time, InstructionType.LerpScale, new Vector3(length, scale.X, scale.Y));
+            }
+
+            public static Instruction SetRectangle(float time, Vector2 topLeft, Vector2 size)
+            {
+                return new Instruction(time, InstructionType.SetRectangle, new Vector4(topLeft, size.X, size.Y));
             }
         }
 
