@@ -32,7 +32,7 @@ namespace WyvernFramework.Sprites
 
         public Vector2 Scale
         {
-            get => Animation.GetScale(AnimationTime, StoredScale);
+            get => (Animation is null) ? StoredScale : Animation.GetScale(AnimationTime, StoredScale);
             set
             {
                 StoreValues();
