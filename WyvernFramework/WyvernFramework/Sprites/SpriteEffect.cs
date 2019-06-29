@@ -47,6 +47,8 @@ namespace WyvernFramework.Sprites
 
         public const int MaxSets = 32;
 
+        public int MaxSprites { get; }
+
         private ShaderModule ComputeShader;
         private ShaderModule VertexShader;
         private ShaderModule FragmentShader;
@@ -73,7 +75,7 @@ namespace WyvernFramework.Sprites
         private Dictionary<VKImage, CommandBuffer> ComputeCommandBuffers { get; } = new Dictionary<VKImage, CommandBuffer>();
         private Semaphore ComputeSemaphore;
 
-        public SpriteEffect(Graphics graphics, RenderPassObject renderPass, ImageLayout initialLayout,
+        public SpriteEffect(Graphics graphics, RenderPassObject renderPass, int maxSprites, ImageLayout initialLayout,
                 Accesses initialAccess, PipelineStages initialStage)
             : base(
                     nameof(SpriteEffect), graphics, ImageLayout.ColorAttachmentOptimal,
@@ -81,6 +83,7 @@ namespace WyvernFramework.Sprites
                 )
         {
             RenderPass = renderPass;
+            MaxSprites = maxSprites;
         }
 
         public override void OnStart()
@@ -486,7 +489,7 @@ namespace WyvernFramework.Sprites
                     computeBuffer = VKBuffer<SpriteInstanceInfo>.StorageBuffer(
                             $"{nameof(SpriteEffect)} compute instance buffer for list {list}",
                             Graphics,
-                            InstanceList.MaxInstances
+                            MaxSprites
                         );
                     ComputeInstanceBuffers.Add(list, computeBuffer);
                 }
@@ -496,7 +499,7 @@ namespace WyvernFramework.Sprites
                     vertexBuffer = VKBuffer<VertexInstance>.StorageBuffer(
                             $"{nameof(SpriteEffect)} vertex instance buffer for list {list}",
                             Graphics,
-                            InstanceList.MaxInstances
+                            MaxSprites
                         );
                     VertexInstanceBuffers.Add(list, vertexBuffer);
                 }
@@ -511,8 +514,11 @@ namespace WyvernFramework.Sprites
                         var ptr = stagingBuffer.Map(0, list.Count);
                         if (list.Updated)
                         {
+                            var i = 0;
                             foreach (SpriteInstance inst in list.AllInstances)
                             {
+                                if (i > MaxSprites)
+                                    throw new InvalidOperationException("Too many similar sprites; raise the sprite limit on the effect");
                                 *ptr = new SpriteInstanceInfo
                                 {
                                     Time = (float)inst.LastStoreTime,
@@ -524,6 +530,7 @@ namespace WyvernFramework.Sprites
                                     AnimationTime = inst.AnimationTime
                                 };
                                 ptr++;
+                                i++;
                             }
                         }
                         else

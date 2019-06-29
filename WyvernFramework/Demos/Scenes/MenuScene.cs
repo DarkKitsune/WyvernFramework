@@ -56,6 +56,7 @@ namespace Demos.Scenes
             SpriteEffect = new SpriteEffect(
                     Graphics,
                     TriangleRenderPass,
+                    2000,
                     ClearEffect.FinalLayout,
                     ClearEffect.FinalAccess,
                     ClearEffect.FinalStage
@@ -77,14 +78,23 @@ namespace Demos.Scenes
                         Animation.Instruction.SetScale(0f, new Vector2(26f, 26f)),
                         Animation.Instruction.LerpScale(0f, 1f, new Vector2(8f, 30f)),
                         Animation.Instruction.SetRectangle(0f, new Vector2(0f, 0f), new Vector2(1f, 1f)),
-                        Animation.Instruction.LerpScale(1f, 1f, new Vector2(20f, 8f)),
-                        Animation.Instruction.SetRectangle(1f, new Vector2(0f, 0f), new Vector2(0.5f, 0.5f)),
-                        Animation.Instruction.LerpScale(2f, 1f, new Vector2(26f, 26f)),
-                        Animation.Instruction.None(3f)
+                        Animation.Instruction.LerpScale(0.7f, 1f, new Vector2(20f, 8f)),
+                        Animation.Instruction.SetRectangle(0.7f, new Vector2(0f, 0f), new Vector2(0.5f, 0.5f)),
+                        Animation.Instruction.LerpScale(1.4f, 1f, new Vector2(26f, 26f)),
+                        Animation.Instruction.None(2.141f)
+                }),
+                    new Animation(new[] {
+                        Animation.Instruction.SetScale(0f, new Vector2(26f, 26f)),
+                        Animation.Instruction.LerpScale(0f, 1f, new Vector2(8f, 30f)),
+                        Animation.Instruction.SetRectangle(0f, new Vector2(0f, 0f), new Vector2(1f, 1f)),
+                        Animation.Instruction.LerpScale(1.861f, 1f, new Vector2(20f, 8f)),
+                        Animation.Instruction.SetRectangle(1.861f, new Vector2(0f, 0f), new Vector2(0.5f, 0.5f)),
+                        Animation.Instruction.LerpScale(3f, 1f, new Vector2(26f, 26f)),
+                        Animation.Instruction.None(5.12f)
                 })
             };
 
-            for (var i = 0; i < InstanceList.MaxInstances; i++)
+            for (var i = 0; i < 2000; i++)
             {
                 var vel = new Vector3(
                         -75f + (float)rand.NextDouble() * 150f,
@@ -96,7 +106,7 @@ namespace Demos.Scenes
                         -100f + (float)rand.NextDouble() * 200f,
                        -1f + (float)rand.NextDouble() * 2f
                     );
-                new SpriteInstance(SpriteEffect, pos, vel, new Vector2(32, 32), tex, new Rect2D(0, 0, 32, 32), anims[i % 2]);
+                new SpriteInstance(SpriteEffect, pos, vel, new Vector2(32, 32), tex, new Rect2D(0, 0, 32, 32), anims[i % 3]);
             }
             TransitionEffect = new TransitionEffect(
                     Graphics,
