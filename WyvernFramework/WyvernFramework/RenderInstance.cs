@@ -20,6 +20,7 @@ namespace WyvernFramework
 
         public void Register()
         {
+            LastStoreTime = InstanceRendererEffect.Graphics.CurrentTime;
             InstanceList = InstanceRendererEffect.RegisterInstance(this);
             Registered = true;
         }

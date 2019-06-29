@@ -18,7 +18,6 @@ namespace WyvernFramework.Sprites
         public enum InstructionType
         {
             None,
-            SetTime,
             SetScale,
             LerpScale
         }
@@ -65,6 +64,13 @@ namespace WyvernFramework.Sprites
                 ArgVec = arg;
             }
 
+            public Instruction(float time, InstructionType type)
+            {
+                Time = time;
+                Type = type;
+                ArgVec = new Vector4(0f, 0f, 0f, 0f);
+            }
+
             public Instruction(float time, InstructionType type, float arg)
             {
                 Time = time;
@@ -86,9 +92,9 @@ namespace WyvernFramework.Sprites
                 ArgVec = new Vector4(arg, 0f);
             }
 
-            public static Instruction SetTime(float time, float newTime)
+            public static Instruction None(float time)
             {
-                return new Instruction(time, InstructionType.SetTime, newTime);
+                return new Instruction(time, InstructionType.None);
             }
 
             public static Instruction SetScale(float time, Vector2 scale)
@@ -103,6 +109,8 @@ namespace WyvernFramework.Sprites
         }
 
         public Instruction[] Instructions { get; }
+
+        public double LastTime => Instructions.Length == 0 ? 0.0 : Instructions[Instructions.Length - 1].Time;
 
         public Animation(IEnumerable<Instruction> instructions)
         {
@@ -139,6 +147,43 @@ namespace WyvernFramework.Sprites
         {
             *(int*)buffer = 0;
             next = buffer + SizeStd140;
+        }
+
+        public Vector2 GetScale(float time, Vector2 baseScale = default)
+        {
+            time = time % (float)LastTime;
+            var passedTime = 0f;
+            var scale = baseScale;
+            for (var i = 0; i < Instructions.Length && passedTime < time; i++)
+            {
+                var inst = Instructions[i];
+                var applies = inst.Time <= time;
+                var arg = inst.ArgVec;
+                var interpLength = arg.X;
+                var interpArg2 = new Vector2(arg.Y, arg.Z);
+                var interpArg3 = new Vector3(arg.Y, arg.Z, arg.W);
+                float interpRatio = Math.Clamp((time - inst.Time) / interpLength, 0f, 1f);
+                passedTime += i > 0
+                    ? inst.Time - Instructions[i - 1].Time
+                    : inst.Time;
+                if (applies)
+                {
+                    switch (inst.Type)
+                    {
+                        case InstructionType.SetScale:
+                            scale = new Vector2(arg.X, arg.Y);
+                            break;
+                        case InstructionType.LerpScale:
+                            scale += (interpArg2 - scale) * interpRatio;
+                            break;/*
+                        case InstructionType.SetTime:
+                            time = arg.X;
+                            i = -1;
+                            break;*/
+                    }
+                }
+            }
+            return scale;
         }
     }
 }

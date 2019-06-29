@@ -1,4 +1,5 @@
 ﻿using VulkanCore;
+using System;
 using System.Numerics;
 
 namespace WyvernFramework.Sprites
@@ -6,12 +7,12 @@ namespace WyvernFramework.Sprites
     public class SpriteInstance : RenderInstance
     {
         internal Vector3 StoredPosition;
-
-        private Vector3 PositionDelta => Velocity * (float)TimeSinceLastStore;
+        internal Vector3 StoredVelocity;
+        internal Vector2 StoredScale;
 
         public Vector3 Position
         {
-            get => StoredPosition + PositionDelta;
+            get => StoredPosition + Velocity * (float)TimeSinceLastStore;
             set
             {
                 StoreValues();
@@ -19,9 +20,25 @@ namespace WyvernFramework.Sprites
             }
         }
 
-        public Vector3 Velocity { get; }
+        public Vector3 Velocity
+        {
+            get => StoredVelocity;
+            set
+            {
+                StoreValues();
+                StoredVelocity = value;
+            }
+        }
 
-        public Vector2 Scale { get; }
+        public Vector2 Scale
+        {
+            get => Animation.GetScale(AnimationTime, StoredScale);
+            set
+            {
+                StoreValues();
+                StoredScale = value;
+            }
+        }
 
         public Texture2D Texture { get; }
 
@@ -29,13 +46,13 @@ namespace WyvernFramework.Sprites
 
         public Animation Animation { get; }
 
-        public float AnimationTime { get; }
+        public float AnimationTime => (float)(InstanceRendererEffect.Graphics.CurrentTime - InstanceList.LastUpdateTime);
 
         public SpriteInstance(SpriteEffect effect, Vector3 position, Vector3 velocity, Vector2 scale, Texture2D texture, Rect2D rectangle, Animation animation) : base(effect)
         {
             StoredPosition = position;
-            Velocity = velocity;
-            Scale = scale;
+            StoredVelocity = velocity;
+            StoredScale = scale;
             Texture = texture;
             var texExtent = texture.Image.Extent;
             Rectangle = new Vector4(
@@ -45,7 +62,6 @@ namespace WyvernFramework.Sprites
                     rectangle.Extent.Height / (float)texExtent.Height
                 );
             Animation = animation;
-            AnimationTime = 0f;
             Register();
         }
 
@@ -56,7 +72,14 @@ namespace WyvernFramework.Sprites
 
         protected override void OnStoreValues()
         {
+            if (InstanceList == null)
+                throw new InvalidOperationException("Trying to store values while not registered yet; check that constructor " +
+                    "isn't setting any property that would call StoreValues()");
             StoredPosition = Position;
+            StoredVelocity = Velocity;
+            StoredScale = Scale;
         }
+
+
     }
 }

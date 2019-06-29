@@ -5,7 +5,7 @@ namespace WyvernFramework
 {
     public class InstanceList
     {
-        public const int MaxInstances = 5000;
+        public const int MaxInstances = 500000;
 
         private List<RenderInstance> Instances { get; } = new List<RenderInstance>();
 
@@ -37,6 +37,10 @@ namespace WyvernFramework
             {
                 inst.StoreValues(0f);
             }
+        }
+
+        internal void FinishUpdate()
+        {
             Updated = false;
             LastUpdateTime = Effect.Graphics.CurrentTime;
         }

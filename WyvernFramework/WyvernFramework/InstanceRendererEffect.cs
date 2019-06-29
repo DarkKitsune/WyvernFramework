@@ -44,7 +44,16 @@ namespace WyvernFramework
         {
             foreach (var keyList in UpdatedInstanceLists)
             {
-                keyList.Value.Update();
+                if (keyList.Value.Updated)
+                    keyList.Value.Update();
+            }
+        }
+
+        protected void FinishUpdateLists()
+        {
+            foreach (var keyList in UpdatedInstanceLists)
+            {
+                keyList.Value.FinishUpdate();
             }
         }
     }

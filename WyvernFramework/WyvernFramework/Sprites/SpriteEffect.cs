@@ -51,8 +51,10 @@ namespace WyvernFramework.Sprites
         private VKBuffer<CameraUniformBlock> CameraUniform;
         private VKBuffer<ListTime> TimeUniform;
         private VKBuffer<Animation.ComputeInstruction> AnimationUniform;
-        private Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>> InstanceBuffers { get; }
+        private Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>> ComputeInstanceBuffers { get; }
                 = new Dictionary<InstanceList, VKBuffer<SpriteInstanceInfo>>();
+        private Dictionary<InstanceList, VKBuffer<Matrix4x4>> VertexInstanceBuffers { get; }
+                = new Dictionary<InstanceList, VKBuffer<Matrix4x4>>();
         private PipelineLayout GraphicsPipelineLayout;
         private PipelineLayout ComputePipelineLayout;
         private Pipeline GraphicsPipeline;
@@ -133,13 +135,19 @@ namespace WyvernFramework.Sprites
                                 stageFlags: ShaderStages.Compute
                             ),
                         new DescriptorSetLayoutBinding(
+                                binding: 1,
+                                descriptorType: DescriptorType.StorageBuffer,
+                                descriptorCount: 1,
+                                stageFlags: ShaderStages.Compute
+                            ),
+                        new DescriptorSetLayoutBinding(
                                 binding: 2,
                                 descriptorType: DescriptorType.UniformBuffer,
                                 descriptorCount: 1,
                                 stageFlags: ShaderStages.Compute
                             ),
                         new DescriptorSetLayoutBinding(
-                                binding: 1,
+                                binding: 3,
                                 descriptorType: DescriptorType.UniformBuffer,
                                 descriptorCount: 1,
                                 stageFlags: ShaderStages.Compute
@@ -167,26 +175,23 @@ namespace WyvernFramework.Sprites
                             {
                                 new VertexInputBindingDescription(
                                         0,
-                                        Interop.SizeOf<SpriteInstanceInfo>(),
+                                        64,
                                         VertexInputRate.Instance
                                     )
                             },
                             new VertexInputAttributeDescription[]
                             {
-                                new VertexInputAttributeDescription( // Position
-                                        0, 0, Format.R32G32B32SFloat, 0
+                                new VertexInputAttributeDescription( // Matrix row 0
+                                        0, 0, Format.R32G32B32A32SFloat, 0
                                     ),
-                                new VertexInputAttributeDescription( // Rectangle
-                                        1, 0, Format.R32G32B32A32SFloat, 32
+                                new VertexInputAttributeDescription( // Matrix row 1
+                                        1, 0, Format.R32G32B32A32SFloat, 16
                                     ),
-                                new VertexInputAttributeDescription( // Scale
-                                        2, 0, Format.R32G32SFloat, 48
+                                new VertexInputAttributeDescription( // Matrix row 2
+                                        2, 0, Format.R32G32B32A32SFloat, 32
                                     ),
-                                new VertexInputAttributeDescription( // ListIndex
-                                        3, 0, Format.R32SInt, 56
-                                    ),
-                                new VertexInputAttributeDescription( // Time
-                                        4, 0, Format.R32SFloat, 60
+                                new VertexInputAttributeDescription( // Matrix row 03
+                                        3, 0, Format.R32G32B32A32SFloat, 48
                                     )
                             }
                         ),
@@ -305,7 +310,7 @@ namespace WyvernFramework.Sprites
                     }
 
                     buffer.CmdBindDescriptorSet(PipelineBindPoint.Graphics, GraphicsPipelineLayout, descriptorSet);
-                    buffer.CmdBindVertexBuffers(0, 1, new VulkanCore.Buffer[] { InstanceBuffers[list].Buffer }, new long[] { 0L });
+                    buffer.CmdBindVertexBuffers(0, 1, new VulkanCore.Buffer[] { VertexInstanceBuffers[list].Buffer }, new long[] { 0L });
                     buffer.CmdDraw(6, list.Count);
                 }
                 buffer.CmdEndRenderPass();
@@ -319,17 +324,6 @@ namespace WyvernFramework.Sprites
                 buffer.CmdBindPipeline(PipelineBindPoint.Compute, ComputePipeline);
                 foreach (var list in nonEmptyLists)
                 {
-                    buffer.CmdPipelineBarrier(
-                            PipelineStages.VertexInput, PipelineStages.ComputeShader,
-                            bufferMemoryBarriers: new BufferMemoryBarrier[]
-                            {
-                                new BufferMemoryBarrier(
-                                        InstanceBuffers[list].Buffer,
-                                        Accesses.VertexAttributeRead, Accesses.ShaderWrite,
-                                        0L, list.Count
-                                    )
-                            }
-                        );
                     if (!ComputeDescriptorSets.TryGetValue(list, out var descriptorSet))
                     {
                         throw new InvalidOperationException(
@@ -338,17 +332,6 @@ namespace WyvernFramework.Sprites
                     }
                     buffer.CmdBindDescriptorSet(PipelineBindPoint.Compute, ComputePipelineLayout, descriptorSet);
                     buffer.CmdDispatch((int)MathF.Ceiling(list.Count / 1024f), 1, 1);
-                    buffer.CmdPipelineBarrier(
-                            PipelineStages.ComputeShader, PipelineStages.VertexInput,
-                            bufferMemoryBarriers: new BufferMemoryBarrier[]
-                            {
-                                new BufferMemoryBarrier(
-                                        InstanceBuffers[list].Buffer,
-                                        Accesses.ShaderWrite, Accesses.VertexAttributeRead,
-                                        0L, list.Count
-                                    )
-                            }
-                        );
                 }
             }
             buffer.End();
@@ -362,6 +345,7 @@ namespace WyvernFramework.Sprites
                 RecreateInstanceBuffers();
                 RecreateAnimations();
                 RecreateDescriptorSets();
+                FinishUpdateLists();
                 Refresh();
             }
             unsafe
@@ -447,18 +431,25 @@ namespace WyvernFramework.Sprites
                                     set, 0, 0, 1, DescriptorType.StorageBuffer,
                                     bufferInfo: new DescriptorBufferInfo[]
                                     {
-                                        new DescriptorBufferInfo(InstanceBuffers[list].Buffer)
+                                        new DescriptorBufferInfo(ComputeInstanceBuffers[list].Buffer)
                                     }
                                 ),
                             new WriteDescriptorSet(
-                                    set, 1, 0, 1, DescriptorType.UniformBuffer,
+                                    set, 1, 0, 1, DescriptorType.StorageBuffer,
+                                    bufferInfo: new DescriptorBufferInfo[]
+                                    {
+                                        new DescriptorBufferInfo(VertexInstanceBuffers[list].Buffer)
+                                    }
+                                ),
+                            new WriteDescriptorSet(
+                                    set, 2, 0, 1, DescriptorType.UniformBuffer,
                                     bufferInfo: new DescriptorBufferInfo[]
                                     {
                                         new DescriptorBufferInfo(TimeUniform.Buffer)
                                     }
                                 ),
                             new WriteDescriptorSet(
-                                    set, 2, 0, 1, DescriptorType.UniformBuffer,
+                                    set, 3, 0, 1, DescriptorType.UniformBuffer,
                                     bufferInfo: new DescriptorBufferInfo[]
                                     {
                                         new DescriptorBufferInfo(AnimationUniform.Buffer)
@@ -477,15 +468,25 @@ namespace WyvernFramework.Sprites
             foreach (var keyList in InstanceLists.Where(e => e.Value.Count > 0))
             {
                 var list = keyList.Value;
-                VKBuffer<SpriteInstanceInfo> buffer;
-                if (!InstanceBuffers.TryGetValue(list, out buffer))
+                VKBuffer<SpriteInstanceInfo> computeBuffer;
+                if (!ComputeInstanceBuffers.TryGetValue(list, out computeBuffer))
                 {
-                    buffer = VKBuffer<SpriteInstanceInfo>.StorageBuffer(
-                            $"{nameof(SpriteEffect)} instance buffer for list {list}",
+                    computeBuffer = VKBuffer<SpriteInstanceInfo>.StorageBuffer(
+                            $"{nameof(SpriteEffect)} compute instance buffer for list {list}",
                             Graphics,
                             InstanceList.MaxInstances
                         );
-                    InstanceBuffers.Add(list, buffer);
+                    ComputeInstanceBuffers.Add(list, computeBuffer);
+                }
+                VKBuffer<Matrix4x4> vertexBuffer;
+                if (!VertexInstanceBuffers.TryGetValue(list, out vertexBuffer))
+                {
+                    vertexBuffer = VKBuffer<Matrix4x4>.StorageBuffer(
+                            $"{nameof(SpriteEffect)} vertex instance buffer for list {list}",
+                            Graphics,
+                            InstanceList.MaxInstances
+                        );
+                    VertexInstanceBuffers.Add(list, vertexBuffer);
                 }
                 using (var stagingBuffer = VKBuffer<SpriteInstanceInfo>.StagingBuffer(
                         $"{nameof(SpriteEffect)}.{nameof(RecreateInstanceBuffers)} staging buffer",
@@ -496,19 +497,30 @@ namespace WyvernFramework.Sprites
                     unsafe
                     {
                         var ptr = stagingBuffer.Map(0, list.Count);
-                        foreach (SpriteInstance inst in list.AllInstances)
+                        if (list.Updated)
                         {
-                            *ptr = new SpriteInstanceInfo
+                            foreach (SpriteInstance inst in list.AllInstances)
                             {
-                                Time = (float)inst.LastStoreTime,
-                                Position = inst.StoredPosition,
-                                Velocity = inst.Velocity,
-                                Scale = inst.Scale,
-                                ListIndex = listInd,
-                                Rectangle = inst.Rectangle,
-                                AnimationTime = inst.AnimationTime
-                            };
-                            ptr++;
+                                *ptr = new SpriteInstanceInfo
+                                {
+                                    Time = (float)inst.LastStoreTime,
+                                    Position = inst.StoredPosition,
+                                    Velocity = inst.Velocity,
+                                    Scale = inst.Scale,
+                                    ListIndex = listInd,
+                                    Rectangle = inst.Rectangle,
+                                    AnimationTime = inst.AnimationTime
+                                };
+                                ptr++;
+                            }
+                        }
+                        else
+                        {
+                            foreach (SpriteInstance inst in list.AllInstances)
+                            {
+                                (*ptr).ListIndex = listInd;
+                                ptr++;
+                            }
                         }
                         stagingBuffer.Unmap();
 
@@ -523,7 +535,7 @@ namespace WyvernFramework.Sprites
                                     bufferMemoryBarriers: new BufferMemoryBarrier[]
                                     {
                                         new BufferMemoryBarrier(
-                                                buffer.Buffer,
+                                                computeBuffer.Buffer,
                                                 Accesses.None, Accesses.TransferWrite,
                                                 0L, stagingBuffer.Size
                                             )
@@ -531,17 +543,27 @@ namespace WyvernFramework.Sprites
                                 );
                             stagingCommands.CmdCopyBuffer(
                                     stagingBuffer.Buffer,
-                                    buffer.Buffer,
+                                    computeBuffer.Buffer,
                                     new BufferCopy[] { new BufferCopy(stagingBuffer.Size) }
+                                );
+                            stagingCommands.CmdPipelineBarrier(
+                                    PipelineStages.Transfer, PipelineStages.ComputeShader,
+                                    bufferMemoryBarriers: new BufferMemoryBarrier[]
+                                    {
+                                        new BufferMemoryBarrier(
+                                                computeBuffer.Buffer,
+                                                Accesses.TransferWrite, Accesses.ShaderRead,
+                                                0L, stagingBuffer.Size
+                                            )
+                                    }
                                 );
                             stagingCommands.CmdPipelineBarrier(
                                     PipelineStages.Transfer, PipelineStages.VertexInput,
                                     bufferMemoryBarriers: new BufferMemoryBarrier[]
                                     {
                                         new BufferMemoryBarrier(
-                                                buffer.Buffer,
-                                                Accesses.TransferWrite, Accesses.VertexAttributeRead,
-                                                0L, stagingBuffer.Size
+                                                vertexBuffer.Buffer,
+                                                Accesses.TransferWrite, Accesses.VertexAttributeRead
                                             )
                                     }
                                 );
@@ -569,6 +591,11 @@ namespace WyvernFramework.Sprites
                 var ptr = (byte*)AnimationUniform.Map(0, nonEmpty.Count() * Animation.MaxInstructions);
                 foreach (var keyList in nonEmpty)
                 {
+                    if (!keyList.Value.Updated)
+                    {
+                        ptr += Animation.SizeStd140;
+                        continue;
+                    }
                     var (texture, animation) = ((Texture2D, Animation))keyList.Key;
                     if (animation is null)
                         Animation.WriteNullToBuffer(ptr, out ptr);
