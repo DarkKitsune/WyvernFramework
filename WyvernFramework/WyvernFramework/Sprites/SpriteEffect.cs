@@ -212,7 +212,7 @@ namespace WyvernFramework.Sprites
                         ),
                     rasterizationState: new PipelineRasterizationStateCreateInfo(
                             polygonMode: PolygonMode.Fill,
-                            cullMode: CullModes.Front,
+                            cullMode: CullModes.None,
                             frontFace: FrontFace.Clockwise,
                             lineWidth: 1f
                         ),
@@ -261,7 +261,7 @@ namespace WyvernFramework.Sprites
                     Animation.MaxInstructions * MaxSets
                 );
             ComputeSemaphore = Graphics.Device.CreateSemaphore();
-            SetCamera(Vector2.Zero, Graphics.Window.Size);
+            SetCamera(Vector2.Zero, new Vector2(Graphics.Window.Size.X, -Graphics.Window.Size.Y));
         }
 
         protected override void OnRegisterImage(VKImage image)

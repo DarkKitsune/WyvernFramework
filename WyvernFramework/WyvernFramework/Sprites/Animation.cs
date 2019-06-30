@@ -138,7 +138,6 @@ namespace WyvernFramework.Sprites
             buffer += 16;
             for (var i = 0; i < Instructions.Length; i++)
             {
-                Debug.WriteLine($"Offset {16 + i * instructionSize} = {Instructions[i].ComputeInstruction}");
                 *(ComputeInstruction*)(buffer + i * instructionSize) = Instructions[i].ComputeInstruction;
             }
             next = buffer - 16 + SizeStd140;
