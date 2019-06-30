@@ -39,7 +39,7 @@ namespace WyvernFramework
         public DeviceMemory DeviceMemory { get; }
 
         public Texture2D(
-                string name, Graphics graphics, TextureData2D data
+                string name, Graphics graphics, TextureData2D data, bool premultiply = true
             )
         {
             Name = name;
@@ -79,7 +79,36 @@ namespace WyvernFramework
                 {
                     fixed (byte* src = mip.Data)
                     {
-                        System.Buffer.MemoryCopy(src, dest, mip.Size, mip.Size);
+                        if (premultiply)
+                        {
+                            switch (data.Format)
+                            {
+                                default:
+                                    throw new NotImplementedException(
+                                            $"Premultiplying is not implemented for format: {data.Format}"
+                                        );
+                                case Format.B8G8R8A8UNorm:
+                                    for (var i = 0; i < mip.Size; i += 4)
+                                    {
+                                        var b = src[i];
+                                        var g = src[i + 1];
+                                        var r = src[i + 2];
+                                        var a = src[i + 3];
+                                        b = (byte)(b * (a / 255f));
+                                        g = (byte)(g * (a / 255f));
+                                        r = (byte)(r * (a / 255f));
+                                        dest[i] = b;
+                                        dest[i + 1] = g;
+                                        dest[i + 2] = r;
+                                        dest[i + 3] = a;
+                                    }
+                                    break;
+                            }
+                        }
+                        else
+                        {
+                            System.Buffer.MemoryCopy(src, dest, mip.Size, mip.Size);
+                        }
                         dest += mip.Size;
                     }
                 }
@@ -166,7 +195,7 @@ namespace WyvernFramework
         /// </summary>
         /// <param name="image"></param>
         /// <returns></returns>
-        public static Texture2D FromBitmap(string name, Graphics graphics, Bitmap image)
+        public static Texture2D FromBitmap(string name, Graphics graphics, Bitmap image, bool premultiply = true)
         {
             var data = image.LockBits(
                     new Rectangle(0, 0, image.Width, image.Height),
@@ -179,7 +208,7 @@ namespace WyvernFramework
                     new Extent2D(image.Width, image.Height)
                 );
             image.UnlockBits(data);
-            return new Texture2D(name, graphics, new TextureData2D(new[] { mipmap }));
+            return new Texture2D(name, graphics, new TextureData2D(new[] { mipmap }), premultiply);
         }
 
         /// <summary>
@@ -189,10 +218,10 @@ namespace WyvernFramework
         /// <param name="graphics"></param>
         /// <param name="stream"></param>
         /// <returns></returns>
-        public static Texture2D FromStream(string name, Graphics graphics, Stream stream)
+        public static Texture2D FromStream(string name, Graphics graphics, Stream stream, bool premultiply = true)
         {
             using (var bmp = (Bitmap)System.Drawing.Image.FromStream(stream))
-                return FromBitmap(name, graphics, bmp);
+                return FromBitmap(name, graphics, bmp, premultiply);
         }
 
         /// <summary>
@@ -202,10 +231,10 @@ namespace WyvernFramework
         /// <param name="graphics"></param>
         /// <param name="path"></param>
         /// <returns></returns>
-        public static Texture2D FromFile(string name, Graphics graphics, string path)
+        public static Texture2D FromFile(string name, Graphics graphics, string path, bool premultiply = true)
         {
             using (var stream = File.OpenRead(path))
-                return FromStream(name, graphics, stream);
+                return FromStream(name, graphics, stream, premultiply);
         }
     }
 }

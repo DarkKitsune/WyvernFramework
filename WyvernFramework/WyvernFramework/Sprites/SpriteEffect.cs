@@ -227,16 +227,7 @@ namespace WyvernFramework.Sprites
                     colorBlendState: new PipelineColorBlendStateCreateInfo(
                             attachments: new[]
                             {
-                                new PipelineColorBlendAttachmentState(
-                                        blendEnable: true,
-                                        srcColorBlendFactor: BlendFactor.One,
-                                        dstColorBlendFactor: BlendFactor.Zero,
-                                        colorBlendOp: BlendOp.Add,
-                                        srcAlphaBlendFactor: BlendFactor.One,
-                                        dstAlphaBlendFactor: BlendFactor.Zero,
-                                        alphaBlendOp: BlendOp.Add,
-                                        colorWriteMask: ColorComponents.All
-                                    )
+                                BlendStates.AlphaPremultiplied
                             }
                         )
                 ));
