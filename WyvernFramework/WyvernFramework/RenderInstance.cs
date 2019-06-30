@@ -20,7 +20,6 @@ namespace WyvernFramework
 
         public void Register()
         {
-            LastStoreTime = InstanceRendererEffect.Graphics.CurrentTime;
             InstanceList = InstanceRendererEffect.RegisterInstance(this);
             Registered = true;
         }
@@ -46,11 +45,14 @@ namespace WyvernFramework
         /// <summary>
         /// Store current values of changing values in instance
         /// </summary>
-        public void StoreValues(float time = -1f)
+        public void StoreValues()
         {
-            OnStoreValues();
-            LastStoreTime = time < 0f ? InstanceList.TimeSinceLastUpdate : time;
-            FlagUpdate();
+            if (TimeSinceLastStore > 0.000001)
+            {
+                OnStoreValues();
+                LastStoreTime = InstanceRendererEffect.Graphics.CurrentTime;
+                FlagUpdate();
+            }
         }
 
         /// <summary>

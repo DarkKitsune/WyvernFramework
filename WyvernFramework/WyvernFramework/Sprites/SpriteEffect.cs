@@ -521,10 +521,10 @@ namespace WyvernFramework.Sprites
                                     throw new InvalidOperationException("Too many similar sprites; raise the sprite limit on the effect");
                                 *ptr = new SpriteInstanceInfo
                                 {
-                                    Time = (float)inst.LastStoreTime,
+                                    Time = 0f,
                                     Position = inst.StoredPosition,
-                                    Velocity = inst.Velocity,
-                                    Scale = inst.Scale,
+                                    Velocity = inst.StoredVelocity,
+                                    Scale = inst.StoredScale,
                                     ListIndex = listInd,
                                     Rectangle = inst.Rectangle,
                                     AnimationTime = inst.AnimationTime

@@ -33,7 +33,7 @@ namespace WyvernFramework
         {
             foreach (var inst in AllInstances.ToArray())
             {
-                inst.StoreValues(0f);
+                inst.StoreValues();
             }
         }
 
