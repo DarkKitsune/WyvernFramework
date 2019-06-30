@@ -133,7 +133,6 @@ namespace WyvernFramework.Sprites
         internal unsafe void WriteToBuffer(byte* buffer, out byte* next)
         {
             var instructionSize = Interop.SizeOf<ComputeInstruction>();
-            Debug.WriteLine($"Offset 0 = {Instructions.Length}");
             ((int*)buffer)[0] = Instructions.Length;
             buffer += 16;
             for (var i = 0; i < Instructions.Length; i++)

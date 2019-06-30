@@ -46,7 +46,9 @@ namespace WyvernFramework.Sprites
 
         public Animation Animation { get; }
 
-        public float AnimationTime => (float)(InstanceRendererEffect.Graphics.CurrentTime - InstanceList.LastUpdateTime);
+        public double AnimationStartTime { get; }
+
+        public float AnimationTime => (float)(InstanceRendererEffect.Graphics.CurrentTime - AnimationStartTime);
 
         public SpriteInstance(SpriteEffect effect, Vector3 position, Vector3 velocity, Vector2 scale, Texture2D texture, Rect2D rectangle, Animation animation) : base(effect)
         {
@@ -62,6 +64,7 @@ namespace WyvernFramework.Sprites
                     rectangle.Extent.Height / (float)texExtent.Height
                 );
             Animation = animation;
+            AnimationStartTime = InstanceRendererEffect.Graphics.CurrentTime;
             Register();
         }
 
