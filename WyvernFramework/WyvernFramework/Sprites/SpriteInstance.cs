@@ -9,6 +9,7 @@ namespace WyvernFramework.Sprites
         internal Vector3 StoredPosition;
         internal Vector3 StoredVelocity;
         internal Vector2 StoredScale;
+        internal float StoredRotation;
 
         public Vector3 Position
         {
@@ -37,6 +38,16 @@ namespace WyvernFramework.Sprites
             {
                 StoreValues();
                 StoredScale = value;
+            }
+        }
+
+        public float Rotation
+        {
+            get => (Animation is null) ? StoredRotation : Animation.GetRotation(AnimationTime, StoredRotation);
+            set
+            {
+                StoreValues();
+                StoredRotation = value;
             }
         }
 
@@ -81,6 +92,7 @@ namespace WyvernFramework.Sprites
             StoredPosition = Position;
             StoredVelocity = Velocity;
             StoredScale = Scale;
+            StoredRotation = Rotation;
         }
 
 

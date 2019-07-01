@@ -20,6 +20,8 @@ namespace WyvernFramework.Sprites
             None,
             SetScale,
             LerpScale,
+            SetRotation,
+            LerpRotation,
             SetRectangle
         }
 
@@ -108,6 +110,16 @@ namespace WyvernFramework.Sprites
                 return new Instruction(time, InstructionType.LerpScale, new Vector3(length, scale.X, scale.Y));
             }
 
+            public static Instruction SetRotation(float time, float rotation)
+            {
+                return new Instruction(time, InstructionType.SetRotation, rotation);
+            }
+
+            public static Instruction LerpRotation(float time, float length, float rotation)
+            {
+                return new Instruction(time, InstructionType.LerpRotation, new Vector2(length, rotation));
+            }
+
             public static Instruction SetRectangle(float time, Vector2 topLeft, Vector2 size)
             {
                 return new Instruction(time, InstructionType.SetRectangle, new Vector4(topLeft, size.X, size.Y));
@@ -156,7 +168,6 @@ namespace WyvernFramework.Sprites
         public Vector2 GetScale(float time, Vector2 baseScale = default)
         {
             time %= (float)LastTime;
-            var passedTime = 0f;
             var scale = baseScale;
             for (var i = 0; i < Instructions.Length; i++)
             {
@@ -165,7 +176,6 @@ namespace WyvernFramework.Sprites
                 var arg = inst.ArgVec;
                 var interpLength = arg.X;
                 var interpArg2 = new Vector2(arg.Y, arg.Z);
-                var interpArg3 = new Vector3(arg.Y, arg.Z, arg.W);
                 float interpRatio = Math.Clamp((time - inst.Time) / interpLength, 0f, 1f);
                 if (applies)
                 {
@@ -181,6 +191,34 @@ namespace WyvernFramework.Sprites
                 }
             }
             return scale;
+        }
+
+        public float GetRotation(float time, float baseRotation = default)
+        {
+            time %= (float)LastTime;
+            var rotation = baseRotation;
+            for (var i = 0; i < Instructions.Length; i++)
+            {
+                var inst = Instructions[i];
+                var applies = inst.Time <= time;
+                var arg = inst.ArgVec;
+                var interpLength = arg.X;
+                var interpArg = arg.Y;
+                float interpRatio = Math.Clamp((time - inst.Time) / interpLength, 0f, 1f);
+                if (applies)
+                {
+                    switch (inst.Type)
+                    {
+                        case InstructionType.SetRotation:
+                            rotation = arg.X;
+                            break;
+                        case InstructionType.LerpRotation:
+                            rotation += (interpArg - rotation) * interpRatio;
+                            break;
+                    }
+                }
+            }
+            return rotation;
         }
     }
 }

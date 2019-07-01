@@ -22,10 +22,12 @@ namespace WyvernFramework.Sprites
             [FieldOffset(48)]
             public Vector2 Scale;
             [FieldOffset(56)]
-            public int ListIndex;
+            public float Rotation;
             [FieldOffset(60)]
-            public float Time;
+            public int ListIndex;
             [FieldOffset(64)]
+            public float Time;
+            [FieldOffset(68)]
             public float AnimationTime;
         }
 
@@ -516,6 +518,7 @@ namespace WyvernFramework.Sprites
                                     Position = inst.StoredPosition,
                                     Velocity = inst.StoredVelocity,
                                     Scale = inst.StoredScale,
+                                    Rotation = inst.StoredRotation,
                                     ListIndex = listInd,
                                     Rectangle = inst.Rectangle,
                                     AnimationTime = inst.AnimationTime
