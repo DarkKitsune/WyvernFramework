@@ -169,6 +169,8 @@ namespace WyvernFramework
         {
             // Print debug info
             this.PrintDebug();
+            // Start
+            OnStart();
             // Main loop
             while (!ShouldClose)
             {
@@ -181,6 +183,22 @@ namespace WyvernFramework
                 // Do draw
                 Draw();
             }
+            // Close
+            OnClose();
+        }
+
+        /// <summary>
+        /// Called at the start of the window
+        /// </summary>
+        public virtual void OnStart()
+        {
+        }
+
+        /// <summary>
+        /// Called when the window is closing
+        /// </summary>
+        public virtual void OnClose()
+        {
         }
 
         /// <summary>
