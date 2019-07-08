@@ -109,7 +109,15 @@ namespace Demos.Scenes
                         -100f + (float)rand.NextDouble() * 200f,
                        -1f + (float)rand.NextDouble() * 2f
                     );
-                new SpriteInstance(SpriteEffect, pos, vel, new Vector2(32, 32), tex, new Rect2D(0, 0, 32, 32), anims[i % 3]);
+                new SpriteInstance(
+                        SpriteEffect,
+                        pos,
+                        vel,
+                        new Vector2(32, 32),
+                        tex,
+                        new Vector4(0, 0, 32f / tex.Image.Extent.Width, 32f / tex.Image.Extent.Height),
+                        anims[i % 3]
+                    );
             }
             TransitionEffect = new TransitionEffect(
                     Graphics,

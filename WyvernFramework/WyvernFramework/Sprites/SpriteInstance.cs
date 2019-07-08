@@ -61,19 +61,14 @@ namespace WyvernFramework.Sprites
 
         public float AnimationTime => (float)(InstanceRendererEffect.Graphics.CurrentTime - AnimationStartTime);
 
-        public SpriteInstance(SpriteEffect effect, Vector3 position, Vector3 velocity, Vector2 scale, Texture2D texture, Rect2D rectangle, Animation animation) : base(effect)
+        public SpriteInstance(SpriteEffect effect, Vector3 position, Vector3 velocity, Vector2 scale, Texture2D texture, Vector4 rectangle, Animation animation) : base(effect)
         {
             StoredPosition = position;
             StoredVelocity = velocity;
             StoredScale = scale;
             Texture = texture;
             var texExtent = texture.Image.Extent;
-            Rectangle = new Vector4(
-                    rectangle.Offset.X / (float)texExtent.Width,
-                    rectangle.Offset.Y / (float)texExtent.Height,
-                    rectangle.Extent.Width / (float)texExtent.Width,
-                    rectangle.Extent.Height / (float)texExtent.Height
-                );
+            Rectangle = rectangle;
             Animation = animation;
             AnimationStartTime = InstanceRendererEffect.Graphics.CurrentTime;
             Register();

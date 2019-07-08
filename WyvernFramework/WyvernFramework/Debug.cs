@@ -161,6 +161,37 @@ namespace WyvernFramework
         }
 
         /// <summary>
+        /// Write some text to the console
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="prefix"></param>
+        public static void Write(string text, string prefix = null)
+        {
+            if (!string.IsNullOrEmpty(prefix))
+                Console.Write($"[{prefix}] ");
+            Console.Write(text);
+        }
+
+        /// <summary>
+        /// Write some text to the console with color
+        /// </summary>
+        /// <param name="text"></param>
+        /// <param name="prefix"></param>
+        public static void Write(ConsoleColor backColor, ConsoleColor foreColor, string text, string prefix = null)
+        {
+            // Store old background colors and set new ones
+            var oldBack = Console.BackgroundColor;
+            var oldFore = Console.ForegroundColor;
+            Console.BackgroundColor = backColor;
+            Console.ForegroundColor = foreColor;
+            // Write the message
+            Write(text, prefix);
+            //  Restore the old background colors
+            Console.BackgroundColor = oldBack;
+            Console.ForegroundColor = oldFore;
+        }
+
+        /// <summary>
         /// Write an info message
         /// </summary>
         /// <param name="text"></param>
